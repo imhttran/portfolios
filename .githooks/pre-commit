@@ -1,0 +1,16 @@
+#!/bin/sh
+# Runs on every commit once activated (`git config core.hooksPath .githooks`).
+# Fast checks only — no e2e here.
+set -e
+
+echo "→ backend: ruff check + format"
+(cd backend && .venv/bin/ruff check . && .venv/bin/ruff format --check .)
+
+echo "→ backend: pytest (DB integration tests skip without TEST_DATABASE_URL)"
+(cd backend && .venv/bin/pytest -q)
+
+echo "→ frontend: typecheck"
+(cd frontend && npx tsc --noEmit)
+
+echo "→ prettier check"
+npx prettier --check . --ignore-path .gitignore

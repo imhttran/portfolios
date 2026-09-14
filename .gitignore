@@ -1,0 +1,29 @@
+# Node / Next.js (frontend/)
+node_modules/
+.next/
+tsconfig.tsbuildinfo
+
+# Python (backend/)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Service pid files (manage.sh)
+*.pid
+
+# Personal env config (template stays tracked: .env.example)
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+
+# Playwright MCP artifacts
+.playwright-mcp/

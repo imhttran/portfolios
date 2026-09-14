@@ -1,0 +1,243 @@
+"""Database-backed auth tests: signup, login, 2FA, sessions, password reset."""
+
+from __future__ import annotations
+
+from sqlalchemy import select
+
+from app.db.session import get_sessionmaker
+from app.models import User
+from app.services.security import issue_token, issue_token_with_ttl
+from tests.helpers import (
+    cleanup,
+    do_json,
+    fill_profile,
+    login,
+    requires_db,
+    signup,
+    unique_email,
+)
+
+pytestmark = requires_db
+
+
+async def test_signup_weak_password(client):
+    response, body = await signup(client, unique_email(), password="weak")
+    assert response.status_code == 400
+    assert body["success"] is False
+    assert "at least 8 characters" in body["message"]
+
+
+async def test_signup_and_login_happy_path(client):
+    email = unique_email()
+    try:
+        response, body = await signup(client, email)
+        assert response.status_code == 201, body
+        assert body["user"]["email"] == email
+
+        token = await login(client, email)
+        response, body = await do_json(client, "GET", "/api/me", token=token)
+        assert response.status_code == 200, body
+        assert body["user"]["email"] == email
+        assert body["user"]["role"] == "client"
+    finally:
+        await cleanup(email)
+
+
+async def test_me_requires_token(client):
+    response, body = await do_json(client, "GET", "/api/me")
+    assert response.status_code == 401
+    assert body == {"message": "No token provided"}
+
+    response, body = await do_json(client, "GET", "/api/me", token="not-a-jwt")
+    assert response.status_code == 403
+    assert body == {"message": "Invalid or expired token"}
+
+
+async def test_two_factor_login(client):
+    email = unique_email()
+    try:
+        response, _ = await signup(client, email)
+        assert response.status_code == 201
+
+        # First login from an unknown device -> 2FA required, no real JWT.
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login",
+            json={"email": email, "password": "Valid123!", "deviceId": "dev-1"},
+        )
+        assert response.status_code == 200, body
+        assert body["twoFactorRequired"] is True
+        pending = body["token"]
+        assert pending
+
+        # Wrong code -> 400, code stays pending.
+        response, _ = await do_json(
+            client,
+            "POST",
+            "/api/login/verify",
+            json={"token": pending, "code": "0000", "deviceId": "dev-1"},
+        )
+        assert response.status_code == 400
+
+        # Resend rotates the code.
+        response, _ = await do_json(
+            client, "POST", "/api/login/resend", json={"token": pending}
+        )
+        assert response.status_code == 200
+
+        # Correct (resent) code -> real JWT.
+        from tests.helpers import fetch_login_code
+
+        code = await fetch_login_code(email)
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login/verify",
+            json={"token": pending, "code": code, "deviceId": "dev-1"},
+        )
+        assert response.status_code == 200, body
+        token = body["token"]
+        assert token and token != pending
+
+        response, _ = await do_json(client, "GET", "/api/me", token=token)
+        assert response.status_code == 200
+
+        # Same device again -> 2FA skipped.
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login",
+            json={"email": email, "password": "Valid123!", "deviceId": "dev-1"},
+        )
+        assert response.status_code == 200, body
+        assert body.get("twoFactorRequired") is not True
+        assert body["token"]
+    finally:
+        await cleanup(email)
+
+
+async def test_session_slides_while_active(client):
+    email = unique_email()
+    try:
+        await signup(client, email)
+
+        # 60 seconds left of the 10-minute window -> renewed on use.
+        aging = issue_token_with_ttl(email, "test-secret", 60)
+        response, _ = await do_json(client, "GET", "/api/me", token=aging)
+        assert response.status_code == 200
+        renewed = response.headers.get("X-Renewed-Token")
+        assert renewed and renewed != aging
+
+        response, _ = await do_json(client, "GET", "/api/me", token=renewed)
+        assert response.status_code == 200
+
+        # A fresh token is not renewed.
+        fresh = issue_token(email, "test-secret")
+        response, _ = await do_json(client, "GET", "/api/me", token=fresh)
+        assert response.status_code == 200
+        assert response.headers.get("X-Renewed-Token") is None
+
+        # Past the window, the token is rejected outright.
+        expired = issue_token_with_ttl(email, "test-secret", -60)
+        response, _ = await do_json(client, "GET", "/api/me", token=expired)
+        assert response.status_code == 403
+    finally:
+        await cleanup(email)
+
+
+async def test_forgot_and_reset_password(client):
+    email = unique_email()
+    try:
+        await signup(client, email)
+
+        response, body = await do_json(
+            client, "POST", "/api/forgot-password", json={"email": email}
+        )
+        assert response.status_code == 200
+        assert "if that email is registered" in body["message"].lower()
+
+        async with get_sessionmaker()() as session:
+            reset_token = await session.scalar(
+                select(User.reset_token).where(User.email == email)
+            )
+        assert reset_token
+
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/reset-password",
+            json={"token": reset_token, "password": "NewPass123!"},
+        )
+        assert response.status_code == 200, body
+        assert body["user"]["email"] == email
+
+        # The old password no longer works; the new one does.
+        response, _ = await do_json(
+            client, "POST", "/api/login", json={"email": email, "password": "Valid123!"}
+        )
+        assert response.status_code == 401
+        assert await login(client, email, password="NewPass123!")
+    finally:
+        await cleanup(email)
+
+
+async def test_change_password(client):
+    email = unique_email()
+    try:
+        await signup(client, email)
+        token = await login(client, email)
+
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/change-password",
+            token=token,
+            json={"currentPassword": "Wrong123!", "newPassword": "NewPass123!"},
+        )
+        assert response.status_code == 401
+        assert body["message"] == "Current password is incorrect"
+
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/change-password",
+            token=token,
+            json={"currentPassword": "Valid123!", "newPassword": "NewPass123!"},
+        )
+        assert response.status_code == 200, body
+        assert await login(client, email, password="NewPass123!", device="other-device")
+    finally:
+        await cleanup(email)
+
+
+async def test_onboarding_gate_requires_profile(client):
+    email = unique_email()
+    try:
+        await signup(client, email)
+        token = await login(client, email)
+
+        # No profile yet -> gated on any non-exempt route.
+        response, body = await do_json(client, "GET", "/api/users", token=token)
+        assert response.status_code == 403
+        assert body["message"] == "Profile information required"
+
+        # The profile route itself is reachable.
+        response, body = await fill_profile(client, token)
+        assert response.status_code == 201, body
+        assert body["profile"]["firstName"] == "Test"
+    finally:
+        await cleanup(email)
+
+
+async def test_resend_verification_is_enumeration_safe(client):
+    email = unique_email()
+    try:
+        # Unknown email -> same generic 200 as a real one.
+        response, body = await do_json(
+            client, "POST", "/api/resend-verification", json={"email": email}
+        )
+        assert response.status_code == 200
+        assert "if that email is registered" in body["message"].lower()
+    finally:
+        await cleanup(email)
