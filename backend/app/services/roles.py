@@ -1,8 +1,16 @@
-"""Ranked roles: a role satisfies a check for itself or anything below it."""
+"""Ranked roles: a role satisfies a check for itself or anything below it.
+
+``artist`` sits between client and staff deliberately. It carries content
+powers - editing a public profile, publishing work into a free or paid bucket -
+but nothing from staff, which is the user-management tier.
+"""
 
 from __future__ import annotations
 
-ROLES: tuple[str, ...] = ("client", "staff", "admin")
+ROLES: tuple[str, ...] = ("client", "artist", "staff", "admin")
+
+# Roles a staff-level viewer is allowed to see. Admin sees everyone.
+BELOW_STAFF: tuple[str, ...] = ("client", "artist", "staff")
 
 
 def role_index(role: str) -> int | None:
