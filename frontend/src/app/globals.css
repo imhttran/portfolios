@@ -498,6 +498,7 @@ body {
        No background of its own, so it sits on the page's colour and reads as
        part of it: the reference's band is what made a light page look like it
        had a dark block bolted on top. */
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -507,6 +508,15 @@ body {
     margin: 0 var(--gutter);
     padding: 64px 20px;
     overflow: hidden;
+}
+
+/* The signature sits in the masthead's bottom-right corner, where a portrait's
+   hair strands would carry it away. It is positioned here and not on the
+   component, because where a signature goes is the page's business. */
+.hero-signature {
+    position: absolute;
+    right: 32px;
+    bottom: 20px;
 }
 
 .hero-statement {
@@ -1826,4 +1836,34 @@ body {
 .button-danger {
     background-color: var(--danger-color);
     color: #fff;
+}
+
+/* ==========================================================================
+   Signature
+
+   The handle, signed. A script face and a trailing stroke that thins away to
+   the right - the line a portrait's hair strands would carry on. Kept to one
+   place and one job, so the face never competes with the body.
+   ========================================================================== */
+.signature {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+    color: var(--text-color);
+}
+
+.signature-name {
+    font-family: var(--font-script);
+    font-size: 2.75rem;
+    line-height: 1;
+    /* A signature leans. Written across a portrait, the rise to the right is
+       what carries the eye off the last letter and along the swash. */
+    transform: rotate(-2deg);
+}
+
+.signature-swash {
+    width: 96px;
+    height: 22px;
+    /* Rides on the baseline, trailing off where the text stops. */
+    margin-bottom: 2px;
 }

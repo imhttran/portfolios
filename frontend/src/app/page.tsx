@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/api";
 import { useSiteCopy } from "@/lib/useSiteCopy";
+import { SITE } from "@/lib/site";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { EmailLink } from "@/components/EmailLink";
 import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
+import { Signature } from "@/components/Signature";
 import { SiteBar } from "@/components/SiteBar";
 
 type RosterArtist = {
@@ -86,6 +88,10 @@ export default function PortfolioPage() {
             </dd>
           </div>
         </dl>
+
+        <div className="hero-signature">
+          <Signature handle={copy.instagram || SITE.name} />
+        </div>
       </section>
 
       {/* Above the work, not below it: it's how a visitor finds the second
