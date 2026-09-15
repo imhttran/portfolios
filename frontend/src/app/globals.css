@@ -565,22 +565,66 @@ body {
     color: var(--text-color);
 }
 
+/* Full bleed: the work breaks out of the page gutter and reaches both edges of
+   the browser, so an album is the size of the frame it is shown in rather than
+   the size of the text column. The heading, the credit and the note stay on the
+   gutter; the photographs do not. The margins are the gutter's own value, so
+   they cancel the sheet's padding exactly at any width. */
 .sheet-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 1px;
+    margin-inline: calc(var(--gutter) * -1);
     background-color: var(--border-color);
     border: var(--rule);
 }
 
 /* The column count comes from lib/useFittedGrids, which reads the artist's
-   ceiling and the window to pick it - so a four-photo album isn't stretched
-   across four columns of empty space, and a roll of twenty-seven doesn't crawl
-   off the bottom of the screen. The sheet is always the full width of the page;
-   the count decides how many rows that makes. Until the count lands (and for a
-   visitor with no JS) the width alone decides, above. */
+   ceiling and the window to pick it - so a roll of twenty-seven doesn't crawl
+   off the bottom of the screen, and a four-photo album doesn't leave three
+   quarters of the frame empty beside it. The grid is the full width of the
+   browser; the count decides how many rows that makes. Until the count lands
+   (and for a visitor with no JS) the width alone decides, above. */
 .sheet-grid[data-fit] {
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+}
+
+/* And when the window has room for the whole album, the rows take the height it
+   has left, so the sheet is the size of the frame it is shown in rather than
+   whatever the crop happens to make it. The grid gets a definite height, which
+   is what gives the frames something to fill. */
+.sheet-grid[data-fill] {
+    height: var(--fit-height);
+    grid-auto-rows: minmax(0, 1fr);
+}
+
+/* Filling means the picture gives up its ratio and takes the row's leftover
+   height, cropped by object-fit like any other frame. Absolute, because a
+   percentage height inside a flex item is a promise the browser does not always
+   keep; the caption and the frame's padding stay in the flow so only the
+   picture moves. */
+.sheet-grid[data-fill] .frame {
+    display: flex;
+    flex-direction: column;
+}
+
+.sheet-grid[data-fill] .frame-open {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.sheet-grid[data-fill] .frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+}
+
+.sheet-grid[data-fill] .frame figcaption {
+    flex: none;
 }
 
 .frame {

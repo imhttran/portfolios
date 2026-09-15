@@ -18,13 +18,17 @@
   to everyone else; `/api/artists` lists the roster and `/api/artists/{slug}`
   serves one artist's words and work. The client area names each album's artist,
   since a subscribe prompt has to say _who_ it is for
-- **Fitted album sheets** — every album sizes itself to the frame it is shown in.
-  The grid solves its column count from the window, so a four-photo album fills
-  the screen instead of leaving half of it empty, and a twenty-seven-photo album
-  stops running on for two. Cells keep one 3:2 crop, so an album still reads as a
-  contact sheet, and the grid is allowed to come in from the edges when a tall
-  frame needs that to fill. Measured in the browser; the CSS grid is the fallback
-  for a visitor without JS
+- **Fitted album sheets** — every album fills the frame it is shown in, both
+  ways. The grid breaks out of the page gutter to span the browser edge to edge,
+  and the window picks the column count whose rows come nearest the height it has
+  left, then stretches the rows to take the rest — so a four-photo album doesn't
+  leave three quarters of the screen empty and a twenty-seven-photo one doesn't
+  run on for two. An artist may set a ceiling on how dense their own sheets get
+  (Ethan is seeded at two across, Ted at four); the count never exceeds it. A
+  stretch that would take a frame past 1.1:1 or 2.5:1 isn't offered, so an album
+  that can't fill the window at a legible crop — which is every album at a two
+  across ceiling — keeps the crop and runs on instead. Measured in the browser;
+  the CSS grid is the fallback for a visitor without JS
 - **Free / paid / premium tiers** — an album sits on one ladder. `free` is
   downloadable by any registered user; `paid` and `premium` need a subscription at
   that level or above (plus the artist, and staff/admin). Looking is never gated,
