@@ -22,7 +22,7 @@ from app.services.email_queue import (
     queue_password_reset,
     queue_verification_email,
 )
-from app.services.roles import ROLES, has_role, role_index
+from app.services.roles import BELOW_STAFF, ROLES, has_role, role_index
 from app.services.security import hash_password
 from app.services.validation import validate_email, validate_password
 
@@ -44,9 +44,9 @@ async def list_users(
     ensure_role(user, "staff")
 
     stmt = select(User.id, User.email, User.role, User.email_verified, User.created_at)
-    # Staff sees clients and other staff; admin sees everyone.
+    # Staff sees every tier at or below their own; admin sees everyone.
     if not has_role(user.role, "admin"):
-        stmt = stmt.where(User.role.in_(["client", "staff"]))
+        stmt = stmt.where(User.role.in_(BELOW_STAFF))
     stmt = stmt.order_by(User.created_at.asc())
 
     try:

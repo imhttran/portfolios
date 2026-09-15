@@ -10,7 +10,7 @@ import sys
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import exists, select, update
+from sqlalchemy import exists, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,6 +49,17 @@ from app.services.security import (
 from app.services.validation import validate_email, validate_password
 
 router = APIRouter(prefix="/api", tags=["auth"])
+
+
+def trusted_until(settings: Settings) -> datetime:
+    """When a device's trust lapses.
+
+    Recomputed on every verification, so the window slides with use: an active
+    browser stays trusted, and a device nobody has used in a month has to prove
+    itself again.
+    """
+    return datetime.now(UTC) + timedelta(days=settings.device_trust_days)
+
 
 LOGIN_CODE_TTL_MINUTES = 10
 MAX_CODE_ATTEMPTS = 5
@@ -295,13 +306,14 @@ async def login(
     if settings.email_verification_required and not row.email_verified:
         return respond(403, fail("Please verify your email before logging in."))
 
-    # Trusted device? Skip 2FA.
+    # Trusted device? Skip 2FA - but only while its trust hasn't lapsed.
     if body.device_id:
         known = await db.scalar(
             select(
                 exists().where(
                     UserDevice.user_id == row.id,
                     UserDevice.device_id == body.device_id,
+                    UserDevice.expires_at > func.now(),
                 )
             )
         )
@@ -387,10 +399,20 @@ async def verify_login(
             update(LoginCode).where(LoginCode.token == body.token).values(used=True)
         )
         if body.device_id:
+            # On conflict *do update*, not do nothing: verifying again slides the
+            # trust forward, so a device in regular use never has to re-verify
+            # just because a fixed window elapsed.
             await db.execute(
                 pg_insert(UserDevice)
-                .values(user_id=row.user_id, device_id=body.device_id)
-                .on_conflict_do_nothing(index_elements=["device_id"])
+                .values(
+                    user_id=row.user_id,
+                    device_id=body.device_id,
+                    expires_at=trusted_until(settings),
+                )
+                .on_conflict_do_update(
+                    index_elements=["user_id", "device_id"],
+                    set_={"expires_at": trusted_until(settings)},
+                )
             )
         await db.commit()
     except SQLAlchemyError as err:
