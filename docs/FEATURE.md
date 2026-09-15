@@ -4,9 +4,49 @@
   on every successful request; idle sessions hard-expire), scrypt password
   hashing, email verification, password
   reset, resend-verification, self-service change-password, email-code 2FA on
-  new devices (trusted devices skip it)
-- **RBAC** — `client` < `staff` < `admin` roles with role-gated routes;
-  promotion is CLI-only so there's no self-service escalation
+  new devices. A device that has passed 2FA stays trusted for a month, and the
+  window slides with use (`DEVICE_TRUST_DAYS`), so an active browser isn't asked
+  again and an abandoned one is
+- **RBAC** — `client` < `artist` < `staff` < `admin` roles with role-gated
+  routes; `artist` is the content tier (site copy, and publishing work) while
+  `staff` is the user-management tier; promotion is CLI-only so there's no
+  self-service escalation
+- **Artist profile** — the site's public copy (name, tagline, statement, bio,
+  location, contact) is editable in `/studio` and stored per artist; each artist
+  gets a page at `/artist/<slug>`
+- **Roster and artist pages** — `/` is the primary artist's portfolio and links
+  to everyone else; `/api/artists` lists the roster and `/api/artists/{slug}`
+  serves one artist's words and work. The client area names each album's artist,
+  since a subscribe prompt has to say _who_ it is for
+- **Fitted album sheets** — every album sizes itself to the frame it is shown in.
+  The grid solves its column count from the window, so a four-photo album fills
+  the screen instead of leaving half of it empty, and a twenty-seven-photo album
+  stops running on for two. Cells keep one 3:2 crop, so an album still reads as a
+  contact sheet, and the grid is allowed to come in from the edges when a tall
+  frame needs that to fill. Measured in the browser; the CSS grid is the fallback
+  for a visitor without JS
+- **Free / paid / premium tiers** — an album sits on one ladder. `free` is
+  downloadable by any registered user; `paid` and `premium` need a subscription at
+  that level or above (plus the artist, and staff/admin). Looking is never gated,
+  only downloading. Unpublishing an album hides it and its photos at once
+- **Subscriptions** — one customer's access to one artist's work, at a level
+  (`paid` or `premium`) that names the highest tier it opens, so the ladder only
+  reaches down. Per artist, so subscribing to one does not open another's paid
+  work. Granted by an admin. No payment provider is wired up; a webhook would
+  write the same row
+- **Image pipeline** — uploads become three files via Pillow: the original (what
+  a download hands over) plus a preview and thumbnail that pages actually load,
+  so a public gallery never streams full-resolution work. EXIF rotation is baked
+  in and the derived files carry no metadata (EXIF often holds GPS coordinates)
+- **Browser uploads and album management** — in `/studio` an artist creates
+  albums in a bucket, uploads up to 20 files at a time, moves an album between
+  buckets, hides or publishes it, and deletes it along with its files. The
+  upload reply is per file, so one bad file doesn't lose the rest, and ownership
+  is enforced: an artist manages their own albums, staff/admin manage anyone's
+- **Folder import** — `python -m app.cli import-album` ingests an existing folder
+  of photos in place: it copies the originals into the storage layout, generates
+  the previews and thumbnails, and creates the photo rows. Idempotent, and it
+  reports non-images (RAW, video) rather than guessing at them
 - **Onboarding gates** — forced password change and required profile block
   API access until completed
 - **Admin user management** — create, delete, verify/unverify, change role,
@@ -17,5 +57,6 @@
   so the API can't be used to probe registered emails
 - **Server-side proxy** — the browser only talks to Next.js; `/api/*` is
   forwarded to the FastAPI backend, so it's never exposed directly
-- **Theming** — UT Austin navy/orange, light and dark variants that follow the
-  system setting
+- **Theming** — a single dark monochrome editorial theme (ink/paper, no accent
+  colour), with mono type reserved for the technical layer: frame numbers,
+  credits, the footer

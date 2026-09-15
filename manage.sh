@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Single entry point for the template: start/stop/status, tests, setup,
-# role management, database reset.
+# role management, database reset, media restore and relayout.
 # Backend: FastAPI + SQLAlchemy + PostgreSQL (backend/). Frontend: Next.js (frontend/).
 
 set -u
@@ -44,12 +44,17 @@ find_python() {
 # precedence the backend's env loader applies. Used by the Postgres check,
 # database reset, and re-seed commands.
 load_db_url() {
-  local url="postgres://postgres:postgres@localhost:5432/db_template?sslmode=disable"
+  local url="postgres://postgres:postgres@localhost:5432/db_portfolios?sslmode=disable"
+  local found=""
   if [ -f "$ROOT_DIR/.env" ]; then
-    url=$(grep -E '^DATABASE_URL=' "$ROOT_DIR/.env" | tail -1 | cut -d= -f2- | tr -d '"' || true)
+    found=$(grep -E '^DATABASE_URL=' "$ROOT_DIR/.env" | tail -1 | cut -d= -f2- | tr -d "\"'" || true)
+  elif [ -f "$ROOT_DIR/.env.dev" ]; then
+    found=$(grep -E '^DATABASE_URL=' "$ROOT_DIR/.env.dev" | tail -1 | cut -d= -f2- | tr -d "\"'" || true)
   fi
-  if [ ! -f "$ROOT_DIR/.env" ] && [ -f "$ROOT_DIR/.env.dev" ]; then
-    url=$(grep -E '^DATABASE_URL=' "$ROOT_DIR/.env.dev" | tail -1 | cut -d= -f2- | tr -d '"')
+  # An env file without DATABASE_URL must not blank the connection string:
+  # `psql ""` quietly targets the local default database instead of ours.
+  if [ -n "$found" ]; then
+    url="$found"
   fi
   echo "$url"
 }
@@ -176,6 +181,13 @@ first_time_setup() {
 # Backend tests (pytest) + frontend build. Integration tests need
 # TEST_DATABASE_URL; without it they skip and the unit tests still run.
 run_tests() {
+  # next build and the running frontend share .next, and building underneath a
+  # live server leaves it inconsistent - which shows up as a 500 on some routes
+  # until the next clean build. Stop it first.
+  if lsof -nP -iTCP:"$PORT_FRONTEND" -sTCP:LISTEN >/dev/null 2>&1; then
+    echo -e "${YELLOW}Stopping the frontend first: 'next build' shares .next with it.${NC}"
+    stop_service "Frontend" frontend frontend "$PORT_FRONTEND"
+  fi
   if [ -n "${TEST_DATABASE_URL:-}" ]; then
     (cd "$ROOT_DIR/backend" && TEST_DATABASE_URL="$TEST_DATABASE_URL" .venv/bin/pytest) || return 1
   else
@@ -186,7 +198,7 @@ run_tests() {
 
 set_user_role() {
   read -r -p "Email: " email
-  read -r -p "Role (client/staff/admin): " role
+  read -r -p "Role (client/artist/staff/admin): " role
   local url
   url=$(load_db_url)
   (cd "$ROOT_DIR/backend" && DATABASE_URL="$url" .venv/bin/python -m app.cli set-role "$email" "$role") || return 1
@@ -214,6 +226,52 @@ re_seed() {
   stop_service "Backend" backend backend "$PORT_BACKEND"
   start_backend || return 1
   echo -e "${GREEN}Database re-seeded.${NC}"
+}
+
+# Rebuild database rows for photos sitting on disk with no row. This is what a
+# reset erases: work that arrived by importing or uploading rather than by
+# seeding, since the seeds only know the placeholder albums. Additive, so
+# nothing is destroyed - and the backend does this on boot as well, so this is
+# for doing it without a restart.
+restore_media() {
+  if [ ! -x "$ROOT_DIR/backend/.venv/bin/python" ]; then
+    echo -e "${RED}backend/.venv is missing. Run [7] First-Time Setup first.${NC}"
+    return 1
+  fi
+  echo "→ scanning the media tree for photos with no rows ..."
+  (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli restore-media --dev-tiers) || return 1
+  read -r -p "Rebuild those rows? [y/N] " confirm
+  case "$confirm" in
+    y | Y) ;;
+    *)
+      echo "Aborted."
+      return 0
+      ;;
+  esac
+  (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli restore-media --dev-tiers --yes) || return 1
+  echo -e "${GREEN}Rows rebuilt.${NC}"
+}
+
+# Move existing photos (and their rows) into the current media layout. Needed
+# once per database after the folder naming changed from artists/{id}/ to
+# artists/{id}-{slug}/; re-running it is a no-op.
+relayout_media() {
+  if [ ! -x "$ROOT_DIR/backend/.venv/bin/python" ]; then
+    echo -e "${RED}backend/.venv is missing. Run [7] First-Time Setup first.${NC}"
+    return 1
+  fi
+  echo "→ checking the media tree against the current layout ..."
+  (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli relayout-media) || return 1
+  read -r -p "Move those files and rows? [y/N] " confirm
+  case "$confirm" in
+    y | Y) ;;
+    *)
+      echo "Aborted."
+      return 0
+      ;;
+  esac
+  (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli relayout-media --yes) || return 1
+  echo -e "${GREEN}Media moved into the current layout.${NC}"
 }
 
 # Tail a service log. Ctrl-C to stop following.
@@ -247,6 +305,8 @@ while true; do
   echo " 9) Reset Database (destructive)"
   echo " 10) View Logs (tail)"
   echo " 11) Re-seed (reset DB + restart backend)"
+  echo " 12) Restore Media Rows (rebuild rows from files on disk)"
+  echo " 13) Relayout Media (move files into the current layout)"
   echo " q) Quit"
   read -r -p "Choose: " choice
   case "$choice" in
@@ -264,6 +324,8 @@ while true; do
     9) reset_database ;;
     10) view_logs ;;
     11) re_seed ;;
+    12) restore_media ;;
+    13) relayout_media ;;
     q) break ;;
     *) echo -e "${YELLOW}Unknown option${NC}" ;;
   esac

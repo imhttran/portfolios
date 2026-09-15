@@ -27,7 +27,10 @@ a 2FA code; in development it's always `1234`, and the browser is trusted
 afterwards.
 
 Useful menu options beyond setup/start: [5] status, [6] tests, [9] reset DB,
-[10] tail logs, [11] re-seed (drop DB + restart backend).
+[10] tail logs, [11] re-seed (drop DB + restart backend), [12] restore media rows
+(rebuild database rows for photos that are on disk but have no row — what a reset
+erases for work that arrived by importing or uploading rather than by seeding),
+[13] relayout media (move files into the current layout; a one-off).
 
 ## Docs
 
@@ -43,20 +46,204 @@ the unit tests still run.
 
 ## Roles
 
-`client` < `staff` < `admin`. Grant via CLI only (no self-service promotion):
+`client` < `artist` < `staff` < `admin`. `artist` carries content
+powers (editing the site's public copy in `/studio`, and publishing work into a
+free or paid bucket); `staff` adds user management. Grant via CLI only (no
+self-service promotion):
 
 ```bash
-cd backend && .venv/bin/python -m app.cli set-role you@email.com admin
+cd backend && .venv/bin/python -m app.cli set-role you@email.com artist
 # or: ./manage.sh → [8]
+```
+
+Dev logins, all with the password `Password1234!`:
+
+| Login              | Role   | Subscribed                                    |
+| ------------------ | ------ | --------------------------------------------- |
+| `admin@mail.com`   | admin  | — (staff/admin can download anything)         |
+| `artist@mail.com`  | artist | owns the three seeded albums                  |
+| `ted@mail.com`     | artist | owns Wetlands, Field Notes and Studio Selects |
+| `client@mail.com`  | client | `paid` on both artists — premium stays locked |
+| `premium@mail.com` | client | `premium` on both — opens every tier          |
+
+Two customers at different levels on purpose, so the ladder is visible on first
+boot (the paid one sees premium locked) _and_ there is a login that can open
+everything. Both subscribe to both artists, which is also the demo of levels
+being per artist rather than global.
+
+See who can download what at a glance: `GET /api/media/albums` answers per
+caller, so the same page shows different locks depending on who is signed in.
+
+## Artists
+
+An artist is a user with the `artist` role, a profile they edit in `/studio`,
+and their own albums. Each gets a page at `/artist/<slug>` (derived from their
+display name when the profile is first saved, then left alone so links survive a
+rename).
+
+- `/` is the **front page**: every artist's published work, each sheet naming its
+  artist, with the roster of artists above the work. The primary artist's copy
+  (statement, About, footer) gives the site its voice.
+- `/artist/<slug>` is one artist's own page — their words and their work.
+- `/gallery` is the **client area**: the whole catalogue, with tiers shown and
+  downloads offered.
+- Subscriptions are **per artist**, so a customer subscribing to one artist does
+  not open another artist's paid work.
+
+## Adding photos
+
+Two ways in, and they write to exactly the same place (both call
+`services/uploads.py`):
+
+**In the browser** — `/studio` lists your albums. Make one with a title and a
+bucket, then _Add photos_ picks up to 20 files at a time (30 MB each). The reply
+is per file: a batch with one bad file adds the rest and names what it skipped.
+You can also edit an album's title, credit and description (_Edit copy_), move it
+between buckets, hide or publish it, and delete it (which deletes its files too).
+
+The **credit** is for work shot by someone else. Your own albums already name you,
+so a credit that just repeats your name isn't shown — which is why a blank credit
+is the normal state for your own work.
+
+**From a folder on disk** — for a whole shoot, which is what the importer is for:
+
+```bash
+cd backend
+.venv/bin/python -m app.cli import-album \
+  --artist ted@mail.com \
+  --dir ~/Downloads/album-d489480890-downloads \
+  --slug wetlands --title "Wetlands" --access paid
+```
+
+The folder is read **in place** - nothing is moved or modified - and files land
+under `MEDIA_ROOT` in the layout described in `services/storage.py`:
+
+```
+originals/artists/{artist}/{album}/{name}.jpg          what a download hands over
+public/artists/{artist}/{album}/{name}-preview.webp     what a page loads
+public/artists/{artist}/{album}/{name}-thumb.webp
+```
+
+`{artist}` is the user id plus their slug when they have a profile
+(`4-ted-nguy`), so browsing the tree says whose work it is - and the bare id when
+they don't, so an album owned by someone without an artist profile still works.
+**One scheme for every photo**, placeholders included: `media/` otherwise reads
+as two different things jumbled together, only one of which names the artist.
+
+Older databases used `artists/{id}/`, and the placeholders sat loose at the media
+root. `./manage.sh` → 13 (`relayout-media`) moves both into the layout above; it's
+a no-op once done.
+
+Why not point `MEDIA_ROOT` at the folder and leave it there: `MEDIA_ROOT` holds
+_every_ artist's originals and all derived files, so it can't be one album; the
+gallery needs a row per photo to know the dimensions and which files belong
+together; and without previews a public page would serve multi-megabyte
+originals.
+
+Re-running the importer only imports what's new, and non-images are **reported,
+not guessed at**. Video is deliberately out of scope for now: it needs decode for
+a poster frame, range requests for playback, and a place to live that isn't the
+`photos` table. RAW needs a decoder we don't have. Both are reported by name so
+nothing vanishes silently.
+
+### When a reset loses work
+
+A database reset drops the rows but **not** the files. Anything that didn't come
+from the seeds - an imported folder, a browser upload - disappears from the site
+while every file sits untouched under `MEDIA_ROOT`.
+
+**This repairs itself on boot.** The seeds finish by rebuilding rows for photos
+that are on disk but not in the database, using the demo's declared tiers, so a
+reset no longer empties an artist's page. Files are the durable asset; the rows
+can always be derived from them.
+
+To do it by hand, or for work whose tiers aren't in the seed map, the media tree
+describes itself well enough to rebuild from:
+
+```bash
+.venv/bin/python -m app.cli restore-media \
+  --tier wetlands=paid --tier field-notes=free --tier studio-selects=premium
+                                   # report: what would come back
+.venv/bin/python -m app.cli restore-media ... --yes
+```
+
+The tier has to be passed in, because filenames deliberately don't record it -
+the database is the only place a bucket lives. Everything else comes off the
+files: the album slug and owner from the path, the title from the file name, the
+dimensions from the image header. Additive and idempotent, so it's safe on a
+database that only lost part of its data.
+
+`prune-media` is the same idea in reverse — it reports files with no rows. If it
+reports orphans after a reset, that's the signal to run this instead of deleting
+them.
+
+### Cleaning up leftovers
+
+Files are written before their database row is committed, so a run that dies in
+between leaves files with nothing pointing at them. Report them, then delete:
+
+```bash
+.venv/bin/python -m app.cli prune-media          # what would go
+.venv/bin/python -m app.cli prune-media --yes    # delete them
+```
+
+### Database upkeep
+
+Two tables grow on their own, because nothing in the app removes from them:
+`login_codes` (one row per login) and `email_queue` (one row per email, which
+delivery only _marks_ sent). Dead rows — codes that are used or expired, devices
+whose 2FA trust has lapsed, and emails delivered or given up more than a week ago
+— are dropped by:
+
+```bash
+.venv/bin/python -m app.cli prune-db                     # report only
+.venv/bin/python -m app.cli prune-db --yes
+.venv/bin/python -m app.cli prune-db --yes --keep-days 0  # clear the mail log now
+```
+
+Recent delivered email is deliberately kept (so "did that email go out?" stays
+answerable) and `pending` mail is never touched, however old. The command also
+reports referential orphans and any album with no photos. A production
+deployment would run it on a schedule.
+
+## Free, paid and premium
+
+An album sits on one ladder:
+
+| Tier      | Who can see it | Who can download it                                                               |
+| --------- | -------------- | --------------------------------------------------------------------------------- |
+| `free`    | anyone         | **any registered user**                                                           |
+| `paid`    | anyone         | a subscriber at level `paid` **or** `premium`, the album's artist, or staff/admin |
+| `premium` | anyone         | a subscriber at level `premium`, the album's artist, or staff/admin               |
+
+A subscription's **level** names the highest tier it opens, so the ladder only
+reaches _down_: premium opens paid albums too, never the reverse. Looking is
+never gated — only taking a copy is.
+
+Subscriptions are granted by an admin (`POST /api/subscriptions`, with
+`level: "paid" | "premium"`, defaulting to `paid`); there is no payment provider
+wired up yet. The dev database seeds one customer at each level, so the ladder
+can be seen without changing anything — sign in as `client@mail.com` to see
+premium locked, or `premium@mail.com` to see it open. To move a level by hand:
+
+```bash
+psql db_portfolios -c "update subscriptions set level='premium' where subscriber_id = 2"
 ```
 
 ## API
 
-19 endpoints under `/api/*` — see `backend/app/api/`:
+39 endpoints under `/api/*` — see `backend/app/api/`:
 
 - **Public auth** (8): signup, verify, resend-verification, forgot-password,
   reset-password, login, login/verify (2FA code), login/resend (2FA code)
-- **Self-service, any signed-in user** (4): me, profile (get/save),
-  change-password
-- **Staff/admin** (7): list users, create user, delete, verify/unverify,
-  change role, resend verification, reset password
+- **Public, no session** (6): media album list/detail, photo previews, the
+  primary artist's profile, the artist roster, one artist by slug
+- **Self-service, any signed-in user** (5): me, profile (get/save),
+  change-password, my subscriptions
+- **Artist** (2): read/save your own public profile
+- **Artist management** (6): list/create/edit/delete your albums, upload photos
+  into one, delete a photo
+- **Signed-in clients** (2): download one photo, download an album as a zip
+- **Staff/admin** (10): list users, create user, delete, verify/unverify,
+  change role, resend verification, reset password, list subscriptions,
+  grant a subscription, revoke a subscription
