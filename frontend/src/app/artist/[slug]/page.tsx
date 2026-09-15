@@ -39,7 +39,7 @@ export default function ArtistPage({
       />
       <SiteBar
         over
-        icon={artist?.slug === SITE.slug ? "/icon.png" : undefined}
+        icon="/icon.png"
         name={artist?.displayName ?? "Artist"}
         role={artist?.tagline ?? ""}
         links={[
