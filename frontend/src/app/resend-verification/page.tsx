@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { submitEmailForm } from "@/lib/api";
+import { LOGIN_PATH, submitEmailForm } from "@/lib/api";
 import { PageTitle } from "@/components/PageTitle";
+import { SITE } from "@/lib/site";
 
 export default function ResendVerificationPage() {
   const [busy, setBusy] = useState(false);
@@ -18,10 +19,10 @@ export default function ResendVerificationPage() {
 
   return (
     <div className="login-container">
-      <PageTitle title="Resend Verification | Frontend Template" />
+      <PageTitle title={`Resend verification | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Resend Verification</h1>
-        <p>Enter your email and we&apos;ll send a new verification link</p>
+        <h1>Resend verification</h1>
+        <p>We&apos;ll send a new link to confirm your email.</p>
 
         <div className="input-group">
           <label htmlFor="email">Email</label>
@@ -35,12 +36,12 @@ export default function ResendVerificationPage() {
         </div>
 
         <button type="submit" className="login-button" disabled={busy}>
-          {busy ? "Sending..." : "Resend Verification"}
+          {busy ? "Sending..." : "Send a new link"}
         </button>
 
         <div className="form-footer">
           <p>
-            <a href="/">Back to login</a>
+            <a href={LOGIN_PATH}>Back to sign in</a>
           </p>
         </div>
       </form>

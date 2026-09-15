@@ -7,14 +7,15 @@ import {
   useState,
   type ChangeEvent,
   type FormEvent,
-  type MouseEvent,
   type ReactEventHandler,
 } from "react";
-import { API_BASE, callApi, renewSessionFrom } from "@/lib/api";
+import { API_BASE, LOGIN_PATH, callApi, renewSessionFrom } from "@/lib/api";
 import { ROLES, hasRole } from "@/lib/roles";
+import { useSiteCopy } from "@/lib/useSiteCopy";
 import { PageHeader } from "@/components/PageHeader";
 import { PageFooter } from "@/components/PageFooter";
 import { PageTitle } from "@/components/PageTitle";
+import { SignOut } from "@/components/SignOut";
 
 const USERS_PER_PAGE = 10;
 
@@ -144,6 +145,8 @@ export default function DashboardPage() {
 
   const isAdmin = me ? hasRole(me.role, "admin") : false;
   const isStaff = me ? hasRole(me.role, "staff") : false;
+  const isArtist = me ? hasRole(me.role, "artist") : false;
+  const copy = useSiteCopy();
 
   const loadUsers = useCallback(async (authToken: string) => {
     try {
@@ -166,8 +169,8 @@ export default function DashboardPage() {
       const stored = localStorage.getItem("auth_token");
 
       if (!stored) {
-        // No token? Kick them back to login
-        window.location.href = "/";
+        // No token? Kick them back to sign in
+        window.location.href = LOGIN_PATH;
         return;
       }
 
@@ -182,9 +185,9 @@ export default function DashboardPage() {
           false,
         );
         if (!result) {
-          // Token expired or invalid? Clear it and kick back to login.
+          // Token expired or invalid? Clear it and kick back to sign in.
           localStorage.removeItem("auth_token");
-          window.location.href = "/";
+          window.location.href = LOGIN_PATH;
           return;
         }
         const user = result.user;
@@ -205,7 +208,7 @@ export default function DashboardPage() {
         // Only staff/admin can list users at all (backend enforces this too).
         if (hasRole(user.role, "staff")) await loadUsers(stored);
       } catch {
-        window.location.href = "/";
+        window.location.href = LOGIN_PATH;
       }
     })();
   }, [loadUsers]);
@@ -275,17 +278,11 @@ export default function DashboardPage() {
     })();
   };
 
-  const logout = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    localStorage.removeItem("auth_token");
-    window.location.href = "/";
-  };
-
   return (
     <div
       className={isStaff ? "dashboard-container wide" : "dashboard-container"}
     >
-      <PageTitle title="Dashboard | Frontend Template" />
+      <PageTitle title={`Dashboard | ${copy.name}`} />
       <PageHeader
         title="Dashboard"
         subtitle={
@@ -298,9 +295,17 @@ export default function DashboardPage() {
           </>
         }
       >
-        <a className="logout-link" href="/" onClick={logout}>
-          Logout
-        </a>
+        <span className="page-header-actions">
+          {isArtist ? (
+            <a className="header-link" href="/studio">
+              Studio
+            </a>
+          ) : null}
+          <a className="header-link" href="/gallery">
+            Gallery
+          </a>
+          <SignOut className="logout-link" />
+        </span>
       </PageHeader>
 
       <div className="dashboard-card">

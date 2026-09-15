@@ -1,331 +1,335 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ClipboardEvent,
-  type FormEvent,
-  type KeyboardEvent,
-} from "react";
-import { confirmedPasswordOrAlert, submitForm } from "@/lib/api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { API_BASE, LOGIN_PATH } from "@/lib/api";
+import { creditFor } from "@/lib/credits";
+import { useSiteCopy } from "@/lib/useSiteCopy";
+import { fitGrid, useFittedGrids } from "@/lib/useFittedGrids";
+import { BackToTop } from "@/components/BackToTop";
+import { PhotoViewer } from "@/components/PhotoViewer";
 import { PageTitle } from "@/components/PageTitle";
-import { Logo } from "@/components/Logo";
+import { SignOut } from "@/components/SignOut";
 
-type LoginResult = { token: string; twoFactorRequired?: boolean };
+type Album = {
+  id: number;
+  slug: string;
+  title: string;
+  credit: string | null;
+  description: string | null;
+  access: string;
+  artistName: string | null;
+  artistSlug: string | null;
+};
 
-// A stable per-browser device id, used to skip 2FA on trusted devices.
-function getDeviceId(): string {
-  let id = localStorage.getItem("device_id");
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem("device_id", id);
-  }
-  return id;
-}
+type RosterArtist = {
+  slug: string;
+  displayName: string;
+  tagline: string;
+  location: string;
+};
 
-export default function LoginPage() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
-  const [busy, setBusy] = useState(false);
-  const [pendingToken, setPendingToken] = useState<string | null>(null);
-  const [digits, setDigits] = useState(["", "", "", ""]);
-  const [resends, setResends] = useState(0);
-  const digitRefs = useRef<(HTMLInputElement | null)[]>([]);
+type Photo = {
+  id: number;
+  title: string | null;
+  previewUrl: string;
+  width: number | null;
+  height: number | null;
+};
 
-  const verifyWithCode = (code: string) => {
-    if (!pendingToken) return;
-    void submitForm<LoginResult>(
-      "/api/login/verify",
-      { token: pendingToken, code, deviceId: getDeviceId() },
-      {
-        busyLabel: "Verifying...",
-        onSuccess: (result) => {
-          localStorage.setItem("auth_token", result.token);
-          window.location.href = "/dashboard";
-        },
-      },
-      setBusy,
-    );
-  };
+type Loaded = { album: Album; photos: Photo[] };
 
-  // Auto-verify once all four digits are filled.
+export default function PortfolioPage() {
+  const [albums, setAlbums] = useState<Loaded[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  // Bumped by the retry button to re-run the load.
+  const [attempt, setAttempt] = useState(0);
+  const [heroLoaded, setHeroLoaded] = useState(false);
+  const [viewing, setViewing] = useState<number | null>(null);
+  const [roster, setRoster] = useState<RosterArtist[]>([]);
+  const copy = useSiteCopy();
+
   useEffect(() => {
-    if (digits.every((d) => d !== "")) {
-      verifyWithCode(digits.join(""));
+    let cancelled = false;
+    setFailed(false);
+
+    (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/media/albums`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+
+        const loaded = await Promise.all(
+          (data.albums as Album[]).map(async (album) => {
+            const detail = await fetch(
+              `${API_BASE}/api/media/albums/${album.slug}`,
+            );
+            const body = await detail.json();
+            if (!detail.ok) throw new Error(body.message);
+            return {
+              album: body.album as Album,
+              photos: body.photos as Photo[],
+            };
+          }),
+        );
+        if (!cancelled) setAlbums(loaded);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
+
+  // One flat list for the viewer, and each frame keeps its position in it, so
+  // the sequence continues across albums instead of restarting per section.
+  const sections = useMemo(() => {
+    // Every artist's published work, not just the primary artist's. Hiding the
+    // rest behind a link made a second artist invisible on the site's own front
+    // page - naming them on each sheet is both more honest and more useful.
+    let offset = 0;
+    return (albums ?? []).map(({ album, photos }) => {
+      const start = offset;
+      offset += photos.length;
+      return {
+        album,
+        frames: photos.map((photo, i) => ({
+          ...photo,
+          credit: album.credit,
+          index: start + i,
+        })),
+      };
+    });
+  }, [albums]);
+
+  // Size every album to the frame it is shown in.
+  useFittedGrids(albums);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/artists`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setRoster(data.artists as RosterArtist[]);
+      } catch {
+        // The roster is a convenience; the page works without it.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const frames = useMemo(() => sections.flatMap((s) => s.frames), [sections]);
+  const heroUrl = frames[0] ? `${API_BASE}${frames[0].previewUrl}` : null;
+
+  // Fade the hero image in only once it's decoded, so the page never shows a
+  // half-painted frame over the statement. A cached image fires no onload.
+  useEffect(() => {
+    if (!heroUrl) return;
+    const image = new Image();
+    image.src = heroUrl;
+    if (image.complete) {
+      setHeroLoaded(true);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [digits]);
+    image.onload = () => setHeroLoaded(true);
+  }, [heroUrl]);
 
-  const handleDigitChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const next = [...digits];
-    next[index] = digit;
-    setDigits(next);
-    if (digit && index < 3) digitRefs.current[index + 1]?.focus();
-  };
-
-  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pasted = e.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 4);
-    const next = ["", "", "", ""];
-    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i];
-    setDigits(next);
-    digitRefs.current[Math.min(pasted.length, 3)]?.focus();
-  };
-
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      digitRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleResend = () => {
-    if (!pendingToken || resends >= 3) return;
-    void submitForm(
-      "/api/login/resend",
-      { token: pendingToken },
-      {
-        busyLabel: "Resending...",
-        onSuccess: () => {
-          setResends((n) => n + 1);
-          setDigits(["", "", "", ""]);
-          digitRefs.current[0]?.focus();
-        },
-      },
-      setBusy,
-    );
-  };
-
-  const handleCancelVerify = () => {
-    setPendingToken(null);
-    setDigits(["", "", "", ""]);
-    setResends(0);
-  };
-
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    void submitForm<LoginResult>(
-      "/api/login",
-      {
-        email: data.get("email"),
-        password: data.get("password"),
-        deviceId: getDeviceId(),
-      },
-      {
-        busyLabel: "Signing in...",
-        onSuccess: (result) => {
-          if (result.twoFactorRequired) {
-            setPendingToken(result.token);
-          } else {
-            localStorage.setItem("auth_token", result.token);
-            window.location.href = "/dashboard";
-          }
-        },
-      },
-      setBusy,
-    );
-  };
-
-  const handleSignup = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const password = String(data.get("password"));
-    const confirmPassword = String(data.get("confirmPassword"));
-
-    if (!confirmedPasswordOrAlert(password, confirmPassword)) return;
-
-    void submitForm(
-      "/api/signup",
-      { email: data.get("email"), password },
-      {
-        busyLabel: "Registering...",
-        onSuccess: () => {
-          alert("Account created! You can now log in.");
-          setMode("login");
-        },
-      },
-      setBusy,
-    );
-  };
+  const closeViewer = useCallback(() => setViewing(null), []);
+  const changeViewer = useCallback((next: number) => setViewing(next), []);
 
   return (
-    <div className="login-container">
-      <PageTitle title="Login | Frontend Template" />
-      <div className="login-logo">
-        <Logo size={48} />
-      </div>
-      {pendingToken ? (
-        <form className="login-form" autoComplete="off">
-          <h1>Verify It&apos;s You</h1>
-          <p>Enter the 4-digit code sent to your device</p>
+    <div className="site">
+      <PageTitle title={`${copy.name} — ${copy.role}`} />
+      <header className="site-bar site-bar--over">
+        <a className="site-identity" href="/">
+          <span className="site-name">{copy.name}</span>
+          <span className="site-role">{copy.role}</span>
+        </a>
+        <nav className="site-nav">
+          <a href="#work">Work</a>
+          <a href="#about">About</a>
+          {roster.length > 1 ? <a href="#artists">Artists</a> : null}
+          <a href="/gallery">Client access</a>
+          <SignOut />
+        </nav>
+      </header>
 
-          <div className="input-group">
-            <label htmlFor="code-0">Verification Code</label>
-            <div className="code-inputs">
-              {digits.map((d, i) => (
-                <input
-                  key={i}
-                  ref={(el) => {
-                    digitRefs.current[i] = el;
-                  }}
-                  id={`code-${i}`}
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]"
-                  maxLength={1}
-                  autoComplete="one-time-code"
-                  autoFocus={i === 0}
-                  value={d}
-                  disabled={busy}
-                  onChange={(e) => handleDigitChange(i, e.target.value)}
-                  onPaste={handlePaste}
-                  onKeyDown={(e) => handleKeyDown(i, e)}
-                />
+      <section className="hero">
+        {heroUrl ? (
+          <>
+            <div
+              className={`hero-media${heroLoaded ? " is-loaded" : ""}`}
+              style={{ backgroundImage: `url(${heroUrl})` }}
+              aria-hidden="true"
+            />
+            <div className="hero-scrim" aria-hidden="true" />
+          </>
+        ) : null}
+
+        <h1 className="hero-statement">{copy.statement}</h1>
+
+        <dl className="hero-meta">
+          <div>
+            <dt>Based in</dt>
+            <dd>{copy.location}</dd>
+          </div>
+          <div>
+            <dt>Frames</dt>
+            <dd>{frames.length || "—"}</dd>
+          </div>
+          <div>
+            <dt>Contact</dt>
+            <dd>
+              <a href={`mailto:${copy.email}`}>{copy.email}</a>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      {/* Above the work, not below it: it's how a visitor finds the second
+          artist, and at the bottom of a long page it may as well not exist. */}
+      {roster.length > 1 ? (
+        <section className="about about--roster" id="artists">
+          <h2 className="mono">Artists</h2>
+          <div className="about-body">
+            <ul className="roster">
+              {roster.map((entry) => (
+                <li key={entry.slug}>
+                  <a className="roster-name" href={`/artist/${entry.slug}`}>
+                    {entry.displayName}
+                  </a>
+                  <span className="roster-line">
+                    {entry.tagline}
+                    {entry.location ? <> — {entry.location}</> : null}
+                  </span>
+                </li>
               ))}
-            </div>
-            <div className="form-footer">
-              <p>
-                Didn&apos;t get it?{" "}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleResend();
-                  }}
-                >
-                  Resend code
-                </a>
-                {resends > 0 && ` (${3 - resends} left)`}
-              </p>
-              <p>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleCancelVerify();
-                  }}
-                >
-                  Cancel
-                </a>
-              </p>
-            </div>
+            </ul>
           </div>
-        </form>
-      ) : mode === "login" ? (
-        <form className="login-form" onSubmit={handleLogin}>
-          <h1>Welcome Back</h1>
-          <p>Please enter your details</p>
+        </section>
+      ) : null}
 
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button type="submit" className="login-button" disabled={busy}>
-            {busy ? "Signing in..." : "Sign In"}
-          </button>
-
-          <div className="form-footer">
-            <p>
-              Don&apos;t have an account?{" "}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMode("signup");
-                }}
+      <main id="work">
+        {failed ? (
+          <section className="sheet">
+            <p className="sheet-note">
+              The gallery couldn&apos;t be loaded.{" "}
+              <button
+                type="button"
+                className="frame-action"
+                onClick={() => setAttempt((n) => n + 1)}
               >
-                Sign up
-              </a>
+                Try again
+              </button>
             </p>
-            <p>
-              <a href="/forgot-password">Forgot password?</a>
+          </section>
+        ) : albums === null ? (
+          <section className="sheet">
+            <p className="sheet-note">Loading the gallery...</p>
+          </section>
+        ) : albums.length === 0 ? (
+          <section className="sheet">
+            <p className="sheet-note">
+              No albums are published yet. Published albums appear here.
             </p>
-            <p>
-              Didn&apos;t get a verification email?{" "}
-              <a href="/resend-verification">Resend it</a>
-            </p>
-          </div>
-        </form>
-      ) : (
-        <form className="login-form" onSubmit={handleSignup}>
-          <h1>Create Account</h1>
-          <p>Join us today</p>
+          </section>
+        ) : (
+          sections.map(({ album, frames: albumFrames }) => (
+            <section className="sheet" key={album.id}>
+              <div className="sheet-head">
+                <h2>{album.title}</h2>
+                <span className="mono">
+                  {albumFrames.length}{" "}
+                  {albumFrames.length === 1 ? "frame" : "frames"}
+                </span>
+              </div>
+              {/* Whose work this is, then anything else worth saying about it. */}
+              <p className="sheet-credit">
+                {album.artistSlug ? (
+                  <a href={`/artist/${album.artistSlug}`}>
+                    {album.artistName ?? album.artistSlug}
+                  </a>
+                ) : null}
+                {creditFor(album) ? <> · {creditFor(album)}</> : null}
+              </p>
 
-          <div className="input-group">
-            <label htmlFor="signup-email">Email</label>
-            <input
-              type="email"
-              id="signup-email"
-              name="email"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
+              <div className="sheet-grid" ref={fitGrid}>
+                {albumFrames.map((frame) => (
+                  <figure className="frame" key={frame.id}>
+                    <button
+                      type="button"
+                      className="frame-open"
+                      onClick={() => setViewing(frame.index)}
+                      aria-label={`View ${frame.title ?? "this frame"} larger`}
+                    >
+                      {/* Plain <img>: same-origin /api paths proxied by this
+                          server, and next/image would re-fetch and re-encode
+                          them for no benefit. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`${API_BASE}${frame.previewUrl}`}
+                        alt=""
+                        loading="lazy"
+                      />
+                    </button>
+                    <figcaption>
+                      <span className="frame-no">
+                        {String(frame.index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="frame-title">
+                        {frame.title ?? "Untitled"}
+                      </span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          ))
+        )}
+      </main>
 
-          <div className="input-group">
-            <label htmlFor="signup-password">Password</label>
-            <input
-              type="password"
-              id="signup-password"
-              name="password"
-              placeholder="Min 8 chars, 1 upper, 1 num, 1 special"
-              required
-            />
-          </div>
+      <section className="about" id="about">
+        <h2 className="mono">About</h2>
+        <div className="about-body">
+          <p className="about-bio">{copy.bio}</p>
+          <p className="about-line">
+            Available for assignments —{" "}
+            <a href={`mailto:${copy.email}`}>{copy.email}</a>
+            {copy.phone ? <> · {copy.phone}</> : null}
+          </p>
+        </div>
+      </section>
 
-          <div className="input-group">
-            <label htmlFor="signup-confirm-password">Confirm Password</label>
-            <input
-              type="password"
-              id="signup-confirm-password"
-              name="confirmPassword"
-              placeholder="Re-enter your password"
-              required
-            />
-          </div>
+      <footer className="site-footer">
+        <span>
+          {copy.name} — {copy.role}
+        </span>
+        <span>
+          <a href={`mailto:${copy.email}`}>{copy.email}</a>
+          {copy.instagram ? <> · {copy.instagram}</> : null}
+          {" · "}
+          <a href={LOGIN_PATH}>Sign in</a>
+        </span>
+        <span>
+          © {new Date().getFullYear()} {copy.name}. All rights reserved.
+        </span>
+      </footer>
 
-          <button type="submit" className="login-button" disabled={busy}>
-            {busy ? "Registering..." : "Register"}
-          </button>
+      {viewing !== null ? (
+        <PhotoViewer
+          items={frames}
+          index={viewing}
+          onClose={closeViewer}
+          onIndexChange={changeViewer}
+        />
+      ) : null}
 
-          <div className="form-footer">
-            <p>
-              Already have an account?{" "}
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMode("login");
-                }}
-              >
-                Log in
-              </a>
-            </p>
-          </div>
-        </form>
-      )}
+      <BackToTop />
     </div>
   );
 }

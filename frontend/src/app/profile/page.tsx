@@ -4,6 +4,7 @@ import { type FormEvent } from "react";
 import { submitAuthedForm } from "@/lib/api";
 import { COUNTRIES, US_STATES } from "@/lib/usStates";
 import { PageTitle } from "@/components/PageTitle";
+import { SITE } from "@/lib/site";
 
 export default function ProfilePage() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -27,10 +28,10 @@ export default function ProfilePage() {
 
   return (
     <div className="login-container">
-      <PageTitle title="Complete Your Profile | Frontend Template" />
+      <PageTitle title={`Your details | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Complete Your Profile</h1>
-        <p>Tell us a bit about yourself before continuing</p>
+        <h1>Your details</h1>
+        <p>Saved to your account.</p>
 
         <div className="input-group">
           <label htmlFor="first-name">First Name</label>

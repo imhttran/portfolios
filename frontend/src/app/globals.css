@@ -1,92 +1,52 @@
+/* ==========================================================================
+   Design tokens
+
+   Monochrome, single theme. The reference is a near-black page with white type
+   and no accent colour, so there is deliberately no brand hue here: the only
+   colours that carry meaning are the paper/ink pair and a muted red reserved
+   for destructive actions.
+   ========================================================================== */
 :root {
-    color-scheme: light;
+    color-scheme: dark;
 
-    /* UT Austin navy scale — anchored on the reference image's deep navy #001020 */
-    --navy-950: #000a14;
-    --navy-900: #001020;
-    --navy-800: #061729;
-    --navy-700: #0b2030;
-    --navy-600: #12304a;
-    --navy-500: #1b4260;
-    --navy-400: #2e5a7a;
-    --navy-300: #5a7e99;
-    --navy-200: #9fb8c9;
-    --navy-100: #d3e0e8;
-    --navy-50: #eef3f6;
+    /* Ink: the page and its surfaces, darkest first. */
+    --ink-950: #08080a;
+    --ink-900: #101013;
+    --ink-800: #17171b;
+    --ink-700: #26262c; /* hairlines */
+    --ink-500: #6b6b73;
+    --ink-400: #8d8d95;
+    --ink-300: #b3b3ba;
 
-    /* UT Austin burnt-orange scale — primary is the official #BF5700 */
-    --orange-800: #8a3d00;
-    --orange-700: #9e4700;
-    --orange-600: #b04a0a;
-    --orange-500: #bf5700;
-    --orange-400: #d06a1f;
-    --orange-300: #e08a4f;
-    --orange-200: #f0b98f;
-    --orange-100: #f8dcc4;
-    --orange-50: #fcf1e6;
+    /* Paper: the type and anything sitting on top of ink. */
+    --paper: #f1f0ec;
+    --paper-dim: #cac9c3;
 
-    /* Semantic tokens */
-    --bg-color: #fafaf7; /* warm off-white, reference image top */
-    --surface-color: #ffffff;
-    --raised-color: #f4f1ec;
-    --text-color: var(--navy-700);
-    --text-muted: var(--navy-300);
-    --placeholder-color: var(--navy-200);
-    --border-color: #e3e0da;
-    --primary-color: var(--orange-500);
-    --primary-hover: var(--orange-700);
-    --on-primary: #ffffff;
-    --danger-color: #b3261e;
-    --danger-hover: #9c1f18;
-    --focus-ring: rgba(191, 87, 0, 0.25);
-    --card-shadow:
-        0 1px 2px rgba(6, 23, 41, 0.06), 0 8px 24px -8px rgba(6, 23, 41, 0.18);
+    /* Semantic tokens. Names kept from the template so existing pages keep
+       working; only the values changed. */
+    --bg-color: var(--ink-950);
+    --surface-color: var(--ink-900);
+    --raised-color: var(--ink-800);
+    --text-color: var(--paper);
+    --text-muted: var(--ink-400);
+    --placeholder-color: var(--ink-500);
+    --border-color: var(--ink-700);
+    /* On a monochrome page the "primary" action is simply paper on ink. */
+    --primary-color: var(--paper);
+    --primary-hover: #ffffff;
+    --on-primary: var(--ink-950);
+    --danger-color: #c4564e;
+    --danger-hover: #d96b62;
+    --focus-ring: rgba(241, 240, 236, 0.24);
+    --card-shadow: none;
 
-    /* Reference image background: warm off-white fading to deep navy */
-    --photo: url("/oaks.jpg");
-    --bg-gradient: linear-gradient(
-        180deg,
-        rgba(250, 250, 247, 0.9) 0%,
-        rgba(238, 243, 246, 0.84) 35%,
-        rgba(173, 196, 212, 0.78) 60%,
-        rgba(27, 66, 96, 0.85) 100%
-    );
+    /* Page rhythm */
+    --gutter: clamp(16px, 4vw, 56px);
+    --rule: 1px solid var(--border-color);
 
-    /* Brand mark — HTT Tiers, duet colorway */
-    --logo-canopy: var(--orange-500);
-    --logo-base: var(--navy-900);
-}
-
-/* Dark variant — same navy/orange brand, navy surfaces instead of white. */
-@media (prefers-color-scheme: dark) {
-    :root {
-        color-scheme: dark;
-        --bg-color: #061729;
-        --surface-color: #0b2030;
-        --raised-color: #12304a;
-        --text-color: #eef3f6;
-        --text-muted: #9fb8c9;
-        --placeholder-color: #5a7e99;
-        --border-color: #1b4260;
-        --primary-color: var(--orange-500);
-        --primary-hover: var(--orange-400);
-        --on-primary: #ffffff;
-        --danger-color: #ff6b5e;
-        --danger-hover: #ff8a7a;
-        --focus-ring: rgba(191, 87, 0, 0.4);
-        --card-shadow:
-            0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
-        --bg-gradient: linear-gradient(
-            180deg,
-            rgba(15, 40, 60, 0.88) 0%,
-            rgba(12, 32, 52, 0.9) 45%,
-            rgba(6, 20, 36, 0.92) 100%
-        );
-
-        /* Brand mark on navy surfaces: keep the orange, lighten the base */
-        --logo-canopy: var(--orange-500);
-        --logo-base: #eef3f6;
-    }
+    --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+    --font-mono:
+        var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
 }
 
 * {
@@ -96,86 +56,875 @@
 }
 
 body {
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-        sans-serif;
-    background-image: var(--bg-gradient), var(--photo);
-    background-repeat: no-repeat, no-repeat;
-    background-attachment: fixed, fixed;
-    background-position: center, center;
-    background-size: cover, cover;
+    background-color: var(--bg-color);
     color: var(--text-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
     min-height: 100vh;
 }
 
-/* Login & Signup Styles */
-.login-container {
+/* Keyboard focus, everywhere, in the page's own colours. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--paper);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        /* Delays would otherwise hold a reveal at its hidden start state, so
+           the content waits there instead of simply appearing. */
+        animation-delay: 0s !important;
+    }
+}
+
+/* The technical layer: labels, frame numbers, metadata, the footer. */
+.mono {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Site chrome — shared by the public pages
+   ========================================================================== */
+.site {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.site-bar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 18px var(--gutter);
+    border-bottom: var(--rule);
+}
+
+/* Over a hero image the bar floats on top of it instead of taking a row. */
+.site-bar--over {
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 2;
+    border-bottom: none;
+}
+
+.site-identity {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.site-name {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
+
+.site-role {
+    display: block;
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.site-nav {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(14px, 2.5vw, 32px);
+    flex-wrap: wrap;
+}
+
+.site-nav a {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 150ms;
+}
+
+.site-nav a:hover {
+    color: var(--text-color);
+}
+
+/* On a narrow screen the identity takes the first row and the nav drops below
+   it as one horizontal row, rather than wrapping into a vertical stack beside
+   the name. */
+@media (max-width: 640px) {
+    .site-bar {
+        flex-wrap: wrap;
+    }
+
+    .site-nav {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 18px;
+    }
+}
+
+/* ==========================================================================
+   Load sequence
+
+   One orchestrated moment at the top of the page: the bar settles, then the
+   statement rises, then the facts under it. Everything below the fold is left
+   alone - animating the work itself would fight the photographs.
+   ========================================================================== */
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.site-bar--over {
+    animation: rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* A page with no backdrop image: the type carries it, so it sits higher and
+   doesn't reserve a viewport's height for nothing. */
+.hero--plain {
+    min-height: 0;
+    padding: clamp(72px, 12vh, 130px) var(--gutter) clamp(28px, 5vh, 48px);
+    background-color: var(--surface-color);
+}
+
+.hero-statement {
+    animation: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 90ms both;
+}
+
+.hero-meta {
+    animation: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms both;
+}
+
+.site-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    padding: 22px var(--gutter) 28px;
+    border-top: var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.site-footer a {
+    color: var(--text-color);
+    text-decoration: none;
+    border-bottom: 1px solid var(--ink-500);
+    padding-bottom: 2px;
+}
+
+.site-footer a:hover {
+    border-bottom-color: var(--paper);
+}
+
+/* ==========================================================================
+   Hero — the statement over the work
+   ========================================================================== */
+.hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: min(88vh, 880px);
+    padding: clamp(80px, 14vh, 160px) var(--gutter) clamp(24px, 5vh, 48px);
+    border-bottom: var(--rule);
+    overflow: hidden;
+}
+
+/* Starts flat ink and fades in once the first frame has loaded, so the hero
+   never flashes a half-painted image. Desaturated: the photographs are the
+   only colour on the page. */
+.hero-media {
+    position: absolute;
+    inset: 0;
+    background-position: center;
+    background-size: cover;
+    filter: grayscale(1) contrast(1.06) brightness(0.5);
+    opacity: 0;
+    transition: opacity 900ms ease;
+}
+
+.hero-media.is-loaded {
+    opacity: 1;
+}
+
+/* Keeps the bar and the statement readable whatever the photograph behind them
+   is: dark at the top and bottom edges, clear through the middle. */
+.hero-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(8, 8, 10, 0.78) 0%,
+        rgba(8, 8, 10, 0.1) 34%,
+        rgba(8, 8, 10, 0.82) 100%
+    );
+    pointer-events: none;
+}
+
+.hero-statement {
+    position: relative;
+    max-width: 34ch;
+    font-size: clamp(1.75rem, 3.6vw, 3.25rem);
+    font-weight: 300;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+}
+
+.hero-meta {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px clamp(20px, 4vw, 60px);
+    margin-top: clamp(24px, 6vh, 56px);
+    padding-top: 14px;
+    border-top: 1px solid rgba(241, 240, 236, 0.28);
+}
+
+.hero-meta dt {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-300);
+}
+
+.hero-meta dd {
+    margin-top: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   Proof sheet — the work grid
+
+   Frames are butted against each other with hairline gutters (the grid's own
+   1px gap showing the border colour through), because that is what a contact
+   sheet looks like: evenly sized frames in a ruled grid, in sequence.
+   ========================================================================== */
+.sheet {
+    padding: clamp(36px, 6vh, 72px) var(--gutter) clamp(56px, 9vh, 110px);
+}
+
+.sheet-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding-bottom: 14px;
+    border-bottom: var(--rule);
+}
+
+.sheet-head h1,
+.sheet-head h2 {
+    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+.sheet-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+/* Which bucket this album is in, stated plainly. */
+.tier {
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-300);
+    border: var(--rule);
+    padding: 5px 8px;
+}
+
+.tier-note {
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sheet-credit {
+    padding: 12px 0 20px;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.sheet-credit a {
+    color: var(--text-color);
+    text-decoration: none;
+    border-bottom: 1px solid var(--ink-500);
+    padding-bottom: 1px;
+}
+
+.sheet-credit a:hover {
+    border-bottom-color: var(--paper);
+}
+
+.sheet-note {
+    padding: 0 var(--gutter) 20px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.sheet-note a {
+    color: var(--text-color);
+}
+
+.sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+    background-color: var(--border-color);
+    border: var(--rule);
+}
+
+/* The column count comes from lib/useFittedGrids, which measures the frame the
+   album is in - so a four-photo album fills the window instead of leaving half
+   of it empty, and a twenty-seven-photo album stops running on for two. A grid
+   that is always as wide as the sheet can't fill a tall frame, so it may come
+   in from the edges and centre itself in what's left. Until that lands (and for
+   a visitor with no JS) the width alone decides, above. */
+.sheet-grid[data-fit] {
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    margin-inline: auto;
+}
+
+.frame {
+    background-color: var(--bg-color);
+    padding: 10px 10px 0;
+    transition: background-color 150ms;
+}
+
+.frame:hover {
+    background-color: var(--ink-900);
+}
+
+/* One crop for every frame, the way a contact sheet presents a roll: the
+   sequence reads evenly before any single picture does. */
+.frame img {
+    display: block;
     width: 100%;
-    max-width: 400px;
-    padding: 20px;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    background-color: var(--raised-color);
+    transition: opacity 150ms;
+}
+
+/* The whole frame opens the viewer, so it's a real button rather than a div
+   with a click handler. The image carries alt="" because this label already
+   names it - two names would just be announced twice. */
+.frame-open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: zoom-in;
+}
+
+.frame-open:hover img {
+    opacity: 0.88;
+}
+
+.frame figcaption {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 10px 0 12px;
+    /* A fitted album can be dense, so the caption has to stay on one line:
+       a wrapped title would make that row taller than the fit assumed. */
+    min-width: 0;
+}
+
+.frame-no {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+}
+
+.frame-title {
+    font-size: 0.8125rem;
+    color: var(--text-color);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* The roster of artists on the landing page: one per line, hairline between. */
+.roster {
+    list-style: none;
+    border-top: var(--rule);
+}
+
+.roster li {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    padding: 14px 0;
+    border-bottom: var(--rule);
+}
+
+.roster-name {
+    font-size: 1.0625rem;
+    color: var(--text-color);
+    text-decoration: none;
+    border-bottom: 1px solid var(--ink-500);
+    padding-bottom: 1px;
+    transition: border-color 150ms;
+}
+
+.roster-name:hover {
+    border-bottom-color: var(--paper);
+}
+
+.roster-line {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.frame-action {
+    /* Pushed to the right edge so the number and title stay together on the
+       left, the way a frame is labelled on a sheet. */
+    margin-left: auto;
+    flex: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-300);
+    cursor: pointer;
+    transition: color 150ms;
+}
+
+.frame-action:hover:not(:disabled) {
+    color: var(--paper);
+    text-decoration: underline;
+}
+
+.frame-action:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Says why there's no download here, instead of just omitting the control and
+   leaving the visitor wondering. */
+.frame-locked {
+    margin-left: auto;
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-500);
+}
+
+/* ==========================================================================
+   About band
+
+   A mono label against the prose, which is the same split the sheet uses
+   between its technical layer and its content.
+   ========================================================================== */
+.about {
+    display: grid;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+    gap: 20px clamp(24px, 6vw, 80px);
+    padding: clamp(36px, 6vh, 72px) var(--gutter);
+    border-top: var(--rule);
+}
+
+/* The roster sits directly under the hero, so it gets less air above it than
+   the About band does. */
+.about--roster {
+    padding-top: clamp(24px, 4vh, 44px);
+}
+
+.about h2 {
+    color: var(--text-muted);
+}
+
+.about-body {
+    max-width: 60ch;
+}
+
+.about-bio {
+    font-size: clamp(1.0625rem, 1.5vw, 1.375rem);
+    font-weight: 300;
+    line-height: 1.45;
+    letter-spacing: -0.01em;
+    text-wrap: pretty;
+}
+
+.about-line {
+    margin-top: 18px;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.about-line a {
+    color: var(--text-color);
+}
+
+@media (max-width: 700px) {
+    .about {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ==========================================================================
+   Viewer
+
+   Three rows: the counter and Close, the frame, then the metadata. The frame
+   is shown whole, at its own ratio - the viewer is where the sheet's uniform
+   crop is undone.
+   ========================================================================== */
+.viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 14px;
+    padding: 14px clamp(14px, 3vw, 40px) 18px;
+    background-color: rgba(8, 8, 10, 0.97);
+    animation: fade-in 220ms ease both;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.viewer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: var(--text-muted);
+}
+
+/* minmax(0, 1fr) above gives this row a definite height, which is what lets
+   the image's max-height resolve against it. */
+.viewer-stage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+.viewer-stage img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.viewer-meta {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ink-700);
+    color: var(--text-muted);
+}
+
+.viewer-title {
+    font-size: 0.9375rem;
+    color: var(--text-color);
+}
+
+.viewer-button {
+    margin-left: auto;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.viewer-button:hover:not(:disabled) {
+    text-decoration: underline;
+}
+
+.viewer-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.viewer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    /* A chip rather than bare glyphs: these sit over a photograph, and an
+       arrow that vanishes into a bright frame is a control that isn't there. */
+    background-color: rgba(8, 8, 10, 0.72);
+    border: var(--rule);
+    padding: 8px 13px;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--ink-300);
+    cursor: pointer;
+    transition:
+        color 150ms,
+        border-color 150ms;
+}
+
+.viewer-nav:hover {
+    color: var(--paper);
+    border-color: var(--ink-500);
+}
+
+.viewer-nav--prev {
+    left: 8px;
+}
+
+.viewer-nav--next {
+    right: 8px;
+}
+
+/* The meta row's button sits at the right edge; in the bar it must not. */
+.viewer-bar .viewer-button {
+    margin-left: 0;
+}
+.site-button {
+    background-color: var(--paper);
+    color: var(--ink-950);
+    border: none;
+    padding: 11px 16px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 150ms;
+}
+
+.site-button:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+}
+
+.site-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.to-top {
+    position: fixed;
+    right: var(--gutter);
+    bottom: 20px;
+    z-index: 3;
+    background-color: var(--paper);
+    color: var(--ink-950);
+    border: none;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms;
+}
+
+.to-top.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   Page chrome — the inner (account) pages
+   ========================================================================== */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.page-header h1 {
+    font-size: 1.375rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+.page-header p {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.header-link {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 150ms;
+}
+
+.header-link:hover {
+    color: var(--text-color);
+}
+
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.logout-link {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--danger-color);
+    text-decoration: none;
+    transition: color 150ms;
+}
+
+.logout-link:hover {
+    color: var(--danger-hover);
+    text-decoration: underline;
+}
+
+.page-footer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
+    padding: 0 4px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+}
+
+.page-footer .highlight {
+    color: var(--text-color);
+}
+
+.page-footer .footer-version {
+    margin-left: auto;
+}
+
+.highlight {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Auth — sign in, sign up, verification, reset
+   ========================================================================== */
+.login-container {
+    min-height: 100vh;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    align-content: center;
+}
+
+.login-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
 }
 
 .login-form {
     background: var(--surface-color);
-    border: 1px solid var(--border-color);
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: var(--card-shadow);
-    text-align: center;
+    border: var(--rule);
+    padding: 32px;
 }
 
 .login-form h1 {
-    font-size: 1.875rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
 }
 
-.login-form p {
+.login-form > p {
     color: var(--text-muted);
-    margin-bottom: 2rem;
-}
-
-/* Brand mark centered above the auth card */
-.login-logo {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1.25rem;
-}
-
-.logo {
-    display: block;
-}
-
-.logo .logo-canopy {
-    color: var(--logo-canopy);
-}
-
-.logo .logo-base {
-    color: var(--logo-base);
+    margin: 6px 0 28px;
+    font-size: 0.875rem;
 }
 
 .input-group {
     text-align: left;
-    margin-bottom: 1.5rem;
+    margin-bottom: 20px;
 }
 
 .input-group label {
     display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    margin-bottom: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
 }
 
 .input-group input {
     width: 100%;
-    padding: 0.75rem;
+    padding: 12px;
     background-color: var(--raised-color);
     color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border: var(--rule);
+    font-family: inherit;
     font-size: 1rem;
     transition:
         border-color 150ms,
@@ -188,7 +937,7 @@ body {
 
 .input-group input:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--ink-300);
     box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
@@ -203,122 +952,308 @@ body {
     width: 48px;
     height: 56px;
     text-align: center;
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
     padding: 0;
     background-color: var(--raised-color);
     color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border: var(--rule);
 }
 
 .code-inputs input:focus {
     outline: none;
-    border-color: var(--primary-color);
+    border-color: var(--ink-300);
     box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 .login-button {
     width: 100%;
-    padding: 0.75rem;
+    padding: 13px;
     background-color: var(--primary-color);
     color: var(--on-primary);
     border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition:
-        background-color 150ms,
-        transform 150ms;
+    transition: background-color 150ms;
 }
 
-.login-button:hover {
+.login-button:hover:not(:disabled) {
     background-color: var(--primary-hover);
 }
 
-.login-button:active {
-    transform: scale(0.96);
+.login-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .form-footer {
-    margin-top: 1.5rem;
-    font-size: 0.875rem;
+    margin-top: 20px;
+    font-size: 0.8125rem;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 10px;
+    color: var(--text-muted);
 }
 
 .form-footer a {
-    color: var(--primary-color);
+    color: var(--text-color);
     text-decoration: none;
+    border-bottom: 1px solid var(--ink-500);
+    padding-bottom: 1px;
 }
 
 .form-footer a:hover {
-    text-decoration: underline;
+    border-bottom-color: var(--paper);
 }
 
-.form-footer p {
+/* ==========================================================================
+   Studio — the artist's own page
+   ========================================================================== */
+.studio-container {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--gutter) 20px;
+}
+
+.studio-form fieldset {
+    border: none;
+    border-top: var(--rule);
+    padding: 20px 0 8px;
+}
+
+.studio-form legend {
+    padding: 0 12px 0 0;
     color: var(--text-muted);
 }
 
-/* Dashboard Styles */
-/* Reusable page header */
-.page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
+/* The form reuses .input-group from the auth pages, but a textarea needs the
+   same box treatment as their inputs. */
+.studio-form textarea {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--raised-color);
+    color: var(--text-color);
+    border: var(--rule);
+    font-family: inherit;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    resize: vertical;
+    transition:
+        border-color 150ms,
+        box-shadow 150ms;
 }
 
-.page-header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
+.studio-form textarea:focus {
+    outline: none;
+    border-color: var(--ink-300);
+    box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.page-header p {
-    margin-top: 4px;
-    color: var(--text-muted);
-}
-
-.logout-link {
-    color: var(--danger-color);
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: color 150ms;
-}
-
-.logout-link:hover {
-    color: var(--danger-hover);
-    text-decoration: underline;
-}
-
-/* Reusable page footer: quiet, small, muted — it should read as an
-   afterthought, not a section. */
-.page-footer {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-top: 12px;
-    padding: 0 4px;
+.field-hint {
+    margin-top: 6px;
     font-size: 0.75rem;
     color: var(--text-muted);
 }
 
-.page-footer .highlight {
+.studio-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-top: 8px;
+}
+
+.studio-actions .login-button {
+    width: auto;
+    padding: 11px 22px;
+}
+
+.studio-saved {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Off-screen but still focusable, so a styled label can stand in for the
+   browser's file picker without breaking keyboard access. */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Albums: one row each, hairline between. */
+.studio-albums {
+    margin-top: 8px;
+}
+
+.album-list {
+    list-style: none;
+}
+
+.album-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    padding: 16px 0;
+    border-bottom: var(--rule);
+}
+
+.album-title {
+    display: block;
+    font-size: 1rem;
+}
+
+.album-meta {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.album-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.album-actions select,
+.studio-new-album select {
+    padding: 8px;
+    background-color: var(--raised-color);
+    color: var(--text-color);
+    border: var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.album-button {
+    display: inline-block;
+    padding: 8px 12px;
+    border: var(--rule);
+    background-color: transparent;
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 150ms;
+}
+
+.album-button:hover {
+    background-color: var(--raised-color);
+}
+
+/* Destructive, but as a quiet outline rather than a filled red button: it sits
+   next to the everyday controls, and shouldn't compete with them. */
+.album-button--danger {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.album-button--danger:hover {
+    background-color: transparent;
+    color: var(--danger-hover);
+    border-color: var(--danger-hover);
+}
+
+/* The file picker is the label; the input inside it is off-screen. */
+.album-upload {
+    position: relative;
+}
+
+.album-upload:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.studio-notice {
+    margin-top: 12px;
+    font-size: 0.8125rem;
     color: var(--text-color);
 }
 
-.page-footer .footer-version {
-    margin-left: auto;
+.studio-rejections {
+    margin-top: 8px;
+    list-style: none;
+    font-size: 0.75rem;
+    color: var(--text-muted);
 }
 
+.studio-rejections li {
+    padding: 2px 0;
+}
+
+.studio-new-album {
+    margin-top: 20px;
+    max-width: 420px;
+}
+
+/* Album copy editing: a <details> per row, so the list stays one line each until
+   someone opens one. */
+.album-edit {
+    flex-basis: 100%;
+}
+
+.album-edit-toggle {
+    width: fit-content;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.album-edit-toggle:hover {
+    color: var(--text-color);
+}
+
+.album-edit-form {
+    margin-top: 12px;
+    max-width: 460px;
+}
+
+.studio-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.studio-check input {
+    accent-color: var(--paper);
+}
+
+/* ==========================================================================
+   Account pages — dashboard and the user table
+   ========================================================================== */
 .dashboard-container {
     width: 100%;
-    max-width: 600px;
-    padding: 20px;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: var(--gutter) 20px;
     transition: max-width 150ms;
 }
 
@@ -330,32 +1265,32 @@ body {
 
 .dashboard-card {
     background: var(--surface-color);
-    border: 1px solid var(--border-color);
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: var(--card-shadow);
-    text-align: center;
-}
-
-.highlight {
-    color: var(--primary-color);
-    font-weight: 600;
+    border: var(--rule);
+    padding: 28px;
 }
 
 .user-list-section {
-    margin-top: 2rem;
-    text-align: left;
+    margin-top: 28px;
+}
+
+.user-list-section h2 {
+    font-size: 1rem;
+    font-weight: 400;
 }
 
 .add-user-toggle {
-    color: var(--primary-color);
+    display: inline-block;
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
     cursor: pointer;
-    font-weight: 500;
-    width: fit-content;
 }
 
 .add-user-toggle:hover {
-    color: var(--primary-hover);
+    color: var(--text-color);
 }
 
 .add-user-form {
@@ -366,17 +1301,17 @@ body {
 
 .add-user-form input {
     flex: 1;
-    padding: 0.6rem;
+    padding: 10px;
     background-color: var(--raised-color);
     color: var(--text-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border: var(--rule);
+    font-family: inherit;
     font-size: 0.875rem;
 }
 
 .add-user-form .login-button {
     width: auto;
-    padding: 0.6rem 1rem;
+    padding: 10px 16px;
 }
 
 /* Horizontal scroll instead of blowing out the page layout when the table
@@ -388,16 +1323,25 @@ body {
 .user-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
 .user-table th,
 .user-table td {
     text-align: left;
     padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.875rem;
+    border-bottom: var(--rule);
+    font-size: 0.8125rem;
     white-space: nowrap;
+}
+
+.user-table th {
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 400;
 }
 
 .user-table th.sortable {
@@ -406,7 +1350,7 @@ body {
 }
 
 .user-table th.sortable:hover {
-    color: var(--primary-color);
+    color: var(--text-color);
 }
 
 .user-table tbody tr:hover {
@@ -424,17 +1368,19 @@ body {
 }
 
 .user-table td button:not(.link-button) {
-    padding: 4px 10px;
-    border: none;
-    border-radius: 6px;
-    background-color: var(--primary-color);
-    color: var(--on-primary);
-    font-size: 0.75rem;
+    padding: 6px 10px;
+    border: var(--rule);
+    background-color: transparent;
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     cursor: pointer;
 }
 
 .user-table td button:not(.link-button):hover {
-    background-color: var(--primary-hover);
+    background-color: var(--raised-color);
 }
 
 /* Verified/Unverified status doubling as its own toggle, styled like a plain
@@ -444,27 +1390,29 @@ body {
     border: none;
     padding: 0;
     font: inherit;
-    color: var(--primary-color);
+    color: var(--text-color);
     text-decoration: underline;
     cursor: pointer;
 }
 
 .link-button:hover {
-    color: var(--primary-hover);
+    color: var(--ink-300);
 }
 
 .actions-trigger {
-    padding: 4px 10px;
-    border: none;
-    border-radius: 6px;
-    background-color: var(--primary-color);
-    color: var(--on-primary);
-    font-size: 0.75rem;
+    padding: 6px 10px;
+    border: var(--rule);
+    background-color: transparent;
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     cursor: pointer;
 }
 
 .actions-trigger:hover {
-    background-color: var(--primary-hover);
+    background-color: var(--raised-color);
 }
 
 /* Actions dropdown (2+ actions): a real popover (native Popover API), not an
@@ -478,10 +1426,9 @@ body {
     inset: auto;
     margin: 0;
     padding: 6px;
-    min-width: 160px;
+    min-width: 170px;
     background: var(--raised-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border: var(--rule);
     color: var(--text-color);
 }
 
@@ -512,18 +1459,22 @@ body {
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin-top: 12px;
-    font-size: 0.875rem;
+    margin-top: 16px;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
     color: var(--text-muted);
 }
 
 .user-pager button {
-    padding: 4px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background: var(--raised-color);
+    padding: 6px 12px;
+    border: var(--rule);
+    background: transparent;
     color: var(--text-color);
-    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     cursor: pointer;
 }
 
@@ -533,14 +1484,11 @@ body {
 }
 
 .user-pager button:not(:disabled):hover {
-    background-color: var(--primary-color);
+    background-color: var(--raised-color);
 }
 
 /* Danger (destructive) button */
 .button-danger {
     background-color: var(--danger-color);
-}
-
-.button-danger:hover {
-    background-color: var(--danger-hover);
+    color: #fff;
 }

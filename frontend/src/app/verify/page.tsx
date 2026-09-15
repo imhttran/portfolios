@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, LOGIN_PATH } from "@/lib/api";
 import { PageTitle } from "@/components/PageTitle";
+import { SITE } from "@/lib/site";
 
 export default function VerifyPage() {
   const [message, setMessage] = useState("Please wait.");
@@ -22,9 +23,9 @@ export default function VerifyPage() {
         );
         const result = await response.json();
         if (response.ok) {
-          setMessage(`${result.message} Redirecting to login…`);
+          setMessage(`${result.message} Redirecting to sign in…`);
           setTimeout(() => {
-            window.location.href = "/";
+            window.location.href = LOGIN_PATH;
           }, 1500);
         } else {
           setMessage(result.message || "Verification failed.");
@@ -37,9 +38,9 @@ export default function VerifyPage() {
 
   return (
     <div className="login-container">
-      <PageTitle title="Verify Email | Frontend Template" />
+      <PageTitle title={`Verifying email | ${SITE.name}`} />
       <div className="login-form">
-        <h1>Verifying…</h1>
+        <h1>Verifying your email</h1>
         <p id="verify-message">{message}</p>
       </div>
     </div>

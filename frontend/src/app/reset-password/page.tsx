@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { confirmedPasswordOrAlert, submitForm } from "@/lib/api";
+import { LOGIN_PATH, confirmedPasswordOrAlert, submitForm } from "@/lib/api";
 import { PageTitle } from "@/components/PageTitle";
+import { SITE } from "@/lib/site";
 
 export default function ResetPasswordPage() {
   const [busy, setBusy] = useState(false);
@@ -35,13 +36,13 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="login-container">
-      <PageTitle title="Reset Password | Frontend Template" />
+      <PageTitle title={`Set a new password | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Reset Password</h1>
-        <p>Choose a new password</p>
+        <h1>Set a new password</h1>
+        <p>You&apos;ll be signed in once it&apos;s saved.</p>
 
         <div className="input-group">
-          <label htmlFor="password">New Password</label>
+          <label htmlFor="password">New password</label>
           <input
             type="password"
             id="password"
@@ -52,7 +53,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="input-group">
-          <label htmlFor="confirm-password">Confirm Password</label>
+          <label htmlFor="confirm-password">Confirm password</label>
           <input
             type="password"
             id="confirm-password"
@@ -63,12 +64,12 @@ export default function ResetPasswordPage() {
         </div>
 
         <button type="submit" className="login-button" disabled={busy}>
-          {busy ? "Resetting..." : "Reset Password"}
+          {busy ? "Saving..." : "Save password"}
         </button>
 
         <div className="form-footer">
           <p>
-            <a href="/">Back to login</a>
+            <a href={LOGIN_PATH}>Back to sign in</a>
           </p>
         </div>
       </form>

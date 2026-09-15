@@ -6,6 +6,11 @@ import { validatePassword } from "./validators";
 // that calls the API directly (CORS must then be enabled on the API side).
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
+// The portfolio owns "/", so signing in is its own route. Everything that
+// needs to send a visitor to the login page imports this instead of hardcoding
+// the path.
+export const LOGIN_PATH = "/login";
+
 type ApiResult = { message?: string; [key: string]: unknown };
 
 // Sliding sessions: every successful authed response may carry a fresh JWT
@@ -83,7 +88,7 @@ export async function submitEmailForm(
       busyLabel: "Sending...",
       onSuccess: (result) => {
         alert(result.message);
-        window.location.href = "/";
+        window.location.href = LOGIN_PATH;
       },
     },
     setBusy,
@@ -129,7 +134,7 @@ export async function submitAuthedForm(
 ): Promise<void> {
   const token = localStorage.getItem("auth_token");
   if (!token) {
-    window.location.href = "/";
+    window.location.href = LOGIN_PATH;
     return;
   }
   const result = await callApi(token, path, "POST", body);

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { confirmedPasswordOrAlert, submitAuthedForm } from "@/lib/api";
 import { PageTitle } from "@/components/PageTitle";
+import { SITE } from "@/lib/site";
 
 export default function ChangePasswordPage() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -21,10 +22,10 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="login-container">
-      <PageTitle title="Change Password | Frontend Template" />
+      <PageTitle title={`Change your password | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
-        <h1>Change Password</h1>
-        <p>Choose a new password</p>
+        <h1>Change your password</h1>
+        <p>Choose a new one.</p>
 
         <div className="input-group">
           <label htmlFor="current-password">Current Password</label>
