@@ -61,7 +61,7 @@ Dev logins, all with the password `Password1234!`:
 | Login              | Role   | Subscribed                                    |
 | ------------------ | ------ | --------------------------------------------- |
 | `admin@mail.com`   | admin  | — (staff/admin can download anything)         |
-| `artist@mail.com`  | artist | owns the three seeded albums                  |
+| `artist@mail.com`  | artist | owns the four seeded albums                   |
 | `ted@mail.com`     | artist | owns Wetlands, Field Notes and Studio Selects |
 | `client@mail.com`  | client | `paid` on both artists — premium stays locked |
 | `premium@mail.com` | client | `premium` on both — opens every tier          |
@@ -241,7 +241,7 @@ there is a menu entry for granting one).
 
 ## API
 
-32 endpoints under `/api/*` — see `backend/app/api/`:
+35 endpoints under `/api/*` — see `backend/app/api/`:
 
 - **Public auth** (8): signup, verify, resend-verification, forgot-password,
   reset-password, login, login/verify (2FA code), login/resend (2FA code)

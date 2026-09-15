@@ -95,7 +95,7 @@ variables are never overwritten.
 
 ## API
 
-39 endpoints under `/api`, all in `app/api/`:
+35 endpoints under `/api`, all in `app/api/`:
 
 Public auth. `POST /api/signup`, `GET /api/verify`, `POST
 /api/resend-verification`, `POST /api/forgot-password`, `POST
