@@ -81,7 +81,13 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 
 
 async def create_all() -> None:
-    """Create any missing tables (idempotent)."""
+    """Create any missing tables (idempotent).
+
+    Note this only *creates*: it will not add a column to a table that already
+    exists, and it will not remove one that the models no longer declare. There
+    is no migration tool here, so a schema change needs the database reset -
+    ``manage.sh`` option 9 in development, and the schema reset in tests.
+    """
     async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

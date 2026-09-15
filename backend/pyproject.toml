@@ -15,6 +15,9 @@ dependencies = [
     "asyncpg>=0.29",
     "pyjwt>=2.8",
     "pydantic>=2.6",
+    "pillow>=10.3",
+    # Required by FastAPI to parse multipart uploads.
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]

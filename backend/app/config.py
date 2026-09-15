@@ -16,7 +16,7 @@ from pathlib import Path
 # Default DSN for local development, used when DATABASE_URL is unset (both by
 # the server and the set-role subcommand).
 DEFAULT_DATABASE_URL = (
-    "postgres://postgres:postgres@localhost:5432/db_template?sslmode=disable"
+    "postgres://postgres:postgres@localhost:5432/db_portfolios?sslmode=disable"
 )
 
 
@@ -49,6 +49,10 @@ class Settings:
     max_attempts: int
     email_verification_required: bool
     jwt_secret: str
+    media_root: str
+    # How long a browser stays trusted after completing 2FA. Slides on each
+    # verification; see models/login.py.
+    device_trust_days: int
 
 
 def load_env_files() -> None:
@@ -125,6 +129,11 @@ def get_settings() -> Settings:
         email_verification_required=os.environ.get("EMAIL_VERIFICATION_REQUIRED")
         != "false",
         jwt_secret=jwt_secret,
+        # Photo files on local disk by default; see services/storage.py.
+        media_root=_env_or(
+            "MEDIA_ROOT", str(Path(__file__).resolve().parent.parent / "media")
+        ),
+        device_trust_days=_int_or("DEVICE_TRUST_DAYS", 30),
     )
 
 
