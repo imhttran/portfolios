@@ -2,8 +2,9 @@
 
 import { use } from "react";
 import { LOGIN_PATH } from "@/lib/api";
-import { SITE } from "@/lib/site";
+import { ABOUT_MORE, SITE } from "@/lib/site";
 import { useAlbumIndex } from "@/lib/usePortfolio";
+import { useRoster } from "@/lib/useRoster";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { BackToTop } from "@/components/BackToTop";
@@ -22,6 +23,7 @@ export default function ArtistPage({
 
   const { artist, albums, failed, missing, loading, retry } =
     useAlbumIndex(slug);
+  const roster = useRoster();
 
   return (
     // The artist's own theme, when they have one and the visitor hasn't chosen.
@@ -36,10 +38,16 @@ export default function ArtistPage({
         }
       />
       <SiteBar
+        over
+        icon={artist?.slug === SITE.slug ? "/icon.png" : undefined}
         name={artist?.displayName ?? "Artist"}
         role={artist?.tagline ?? ""}
         links={[
-          { href: "/#artists", label: "All artists" },
+          { href: "#work", label: "Work" },
+          { href: "#about", label: "About" },
+          ...(roster.length > 1
+            ? [{ href: "#artists", label: "Artists" }]
+            : []),
           { href: "/gallery", label: "Client access" },
         ]}
       />
@@ -59,28 +67,48 @@ export default function ArtistPage({
         <SheetNote>Loading…</SheetNote>
       ) : (
         <>
-          <section className="hero hero--plain">
+          <section className="hero">
             <h1 className="hero-statement">{artist.statement}</h1>
-            <dl className="hero-meta">
-              <div>
-                <dt>Based in</dt>
-                <dd>{artist.location}</dd>
-              </div>
-              <div>
-                <dt>Albums</dt>
-                <dd>{albums?.length ?? "—"}</dd>
-              </div>
-              <div>
-                <dt>Contact</dt>
-                <dd>
-                  <EmailLink
-                    address={artist.contactEmail}
-                    name={artist.displayName}
-                  />
-                </dd>
-              </div>
-            </dl>
+            <div className="hero-contact">
+              <EmailLink
+                address={artist.contactEmail}
+                name={artist.displayName}
+              />
+              {artist.instagram ? (
+                <InstagramLink
+                  handle={artist.instagram}
+                  name={artist.displayName}
+                />
+              ) : null}
+            </div>
           </section>
+
+          {/* Above the work, not below it: it's how a visitor finds the rest
+              of the roster, and at the bottom of a long page it may as well
+              not exist. */}
+          {roster.length > 1 ? (
+            <section className="about about--roster" id="artists">
+              <h2 className="mono">Artists</h2>
+              <div className="about-body">
+                <ul className="roster">
+                  {roster.map((entry) => (
+                    <li key={entry.slug}>
+                      <a
+                        className="roster-name"
+                        href={`/artist/${entry.slug}`}
+                      >
+                        {entry.displayName}
+                      </a>
+                      <span className="roster-line">
+                        {entry.tagline}
+                        {entry.location ? <> — {entry.location}</> : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          ) : null}
 
           {albums && albums.length > 0 ? (
             <AlbumIndex albums={albums} />
@@ -88,18 +116,17 @@ export default function ArtistPage({
             <SheetNote>No albums are published yet.</SheetNote>
           )}
 
-          <section className="about">
+          <section className="about" id="about">
             <h2 className="mono">About</h2>
             <div className="about-body">
               <p className="about-bio">{artist.bio}</p>
-              <p className="about-line">
-                Available for assignments —{" "}
-                <EmailLink
-                  address={artist.contactEmail}
-                  name={artist.displayName}
-                />
-                {artist.phone ? <> · {artist.phone}</> : null}
-              </p>
+              {artist.slug === SITE.slug
+                ? ABOUT_MORE.map((paragraph, index) => (
+                    <p className="about-more" key={index}>
+                      {paragraph}
+                    </p>
+                  ))
+                : null}
             </div>
           </section>
         </>

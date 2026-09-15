@@ -455,18 +455,10 @@ body {
     z-index: auto;
 }
 
-/* An artist's own masthead: the same flat band, shorter, since their statement
-   is one line and the room is better spent on their work. Two classes so it
-   out-weighs .hero's own min-height. */
-.hero.hero--plain {
-    min-height: 360px;
-}
-
 .hero-statement {
     animation: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 90ms both;
 }
 
-.hero-meta,
 .hero-contact {
     animation: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms both;
 }
@@ -531,47 +523,6 @@ body {
     color: var(--text-color);
     text-align: center;
     text-wrap: balance;
-}
-
-.hero-meta {
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px 32px;
-    color: var(--text-muted);
-}
-
-/* Each pair on one line, with a gap between label and value - they used to run
-   together into "Based inAustin, TX". */
-.hero-meta > div {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-}
-
-.hero-meta dt,
-.hero-meta dd {
-    font-size: 0.9375rem;
-    line-height: 1.125rem;
-    color: inherit;
-}
-
-.hero-meta dd {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* Otherwise the email renders as the browser's default blue, which is the one
-   colour on the page and sits in the largest type after the statement. */
-.hero-meta a {
-    color: var(--text-color);
-    text-decoration: none;
-}
-
-.hero-meta a:hover {
-    text-decoration: underline;
 }
 
 /* Just the two glyphs, no label - sized well past the meta row's 15px so they
@@ -1040,14 +991,18 @@ body {
     text-wrap: pretty;
 }
 
-.about-line {
+/* The longer read, below the bio's lead-in - body copy rather than a
+   statement, so it drops back to the page's own size and a full measure. */
+.about-more {
+    max-width: 65ch;
     margin-top: 18px;
-    font-size: 0.875rem;
+    font-size: 1rem;
+    line-height: 1.6;
     color: var(--text-muted);
 }
 
-.about-line a {
-    color: var(--text-color);
+.about-more:first-of-type {
+    margin-top: 28px;
 }
 
 @media (max-width: 700px) {

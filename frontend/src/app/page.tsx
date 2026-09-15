@@ -1,22 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { API_BASE } from "@/lib/api";
+import { ABOUT_MORE } from "@/lib/site";
 import { useSiteCopy } from "@/lib/useSiteCopy";
 import { useAlbumIndex } from "@/lib/usePortfolio";
+import { useRoster } from "@/lib/useRoster";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { EmailLink } from "@/components/EmailLink";
 import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
-
-type RosterArtist = {
-  slug: string;
-  displayName: string;
-  tagline: string;
-  location: string;
-};
 
 /**
  * The front page: the statement, who is on the site, and an index of the work.
@@ -27,25 +20,8 @@ type RosterArtist = {
  */
 export default function PortfolioPage() {
   const { albums, failed, loading, retry } = useAlbumIndex();
-  const [roster, setRoster] = useState<RosterArtist[]>([]);
+  const roster = useRoster();
   const copy = useSiteCopy();
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/artists`);
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!cancelled) setRoster(data.artists as RosterArtist[]);
-      } catch {
-        // The roster is a convenience; the page works without it.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
     <div className="site">
@@ -123,11 +99,11 @@ export default function PortfolioPage() {
         <h2 className="mono">About</h2>
         <div className="about-body">
           <p className="about-bio">{copy.bio}</p>
-          <p className="about-line">
-            Available for assignments —{" "}
-            <EmailLink address={copy.email} name={copy.name} />
-            {copy.phone ? <> · {copy.phone}</> : null}
-          </p>
+          {ABOUT_MORE.map((paragraph, index) => (
+            <p className="about-more" key={index}>
+              {paragraph}
+            </p>
+          ))}
         </div>
       </section>
 

@@ -105,13 +105,16 @@ async def seed_dev_client(
 # as the fallback for a site whose artist hasn't saved a profile yet.
 _DEV_PROFILE = {
     "display_name": "Ethan Tran",
-    "tagline": "Artist",
+    "tagline": "Photographer, DP",
     "statement": (
         "Most of these were made without asking anyone to hold still. "
         "Nothing here is arranged."
     ),
-    "bio": "Placeholder. Say who you are, what you make, and who you make it for.",
-    "location": "Austin, TX",
+    "bio": (
+        "A creative guy with a camera, too many ideas, good taste, and just "
+        "enough existential crisis to turn it all into art."
+    ),
+    "location": "New York, NY",
     "contact_email": "tom.tran@email.com",
     "instagram": "ethan.uncurated",
     # Two across, uniformly. The design reference this site is built on lays its
@@ -234,6 +237,7 @@ async def seed_dev_artist_two(
 _DEV_FREE_ALBUM = "ethan-uncurated"
 _DEV_PAID_ALBUM = "night-work"
 _DEV_PREMIUM_ALBUM = "long-exposure"
+_DEV_STREET_ALBUM = "street-photography"
 
 # (title, width, height, top tone, bottom tone). Alternating orientations so the
 # grid reads like a real album rather than a wall of identical tiles.
@@ -266,6 +270,15 @@ _PREMIUM_PHOTOS = (
     ("Plate 02", 1067, 1600, 48, 8),
     ("Plate 03", 1600, 1067, 120, 200),
     ("Plate 04", 1400, 1050, 90, 20),
+)
+
+_STREET_PHOTOS = (
+    ("Street 01", 1600, 1067, 40, 100),
+    ("Street 02", 1067, 1600, 100, 40),
+    ("Street 03", 1600, 1067, 66, 140),
+    ("Street 04", 1400, 1400, 88, 24),
+    ("Street 05", 1067, 1600, 120, 60),
+    ("Street 06", 1600, 900, 30, 90),
 )
 
 
@@ -395,12 +408,22 @@ async def seed_dev_gallery(
             artist_id=artist_id,
             photos=_PREMIUM_PHOTOS,
         )
+        street = await _top_up_album(
+            session,
+            slug=_DEV_STREET_ALBUM,
+            title="Street Photography",
+            credit=None,
+            description=None,
+            access=TIER_FREE,
+            artist_id=artist_id,
+            photos=_STREET_PHOTOS,
+        )
         await session.commit()
 
-    if free or paid or premium:
+    if free or paid or premium or street:
         print(
             f"[seed] dev gallery: +{free} free, +{paid} paid, "
-            f"+{premium} premium placeholder(s)",
+            f"+{premium} premium, +{street} street placeholder(s)",
             file=sys.stderr,
         )
 
