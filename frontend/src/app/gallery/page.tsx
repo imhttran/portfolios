@@ -189,11 +189,11 @@ export default function GalleryPage() {
       <main>
         {failed ? (
           <section className="sheet">
-            <p className="sheet-note">The gallery couldn&apos;t be loaded.</p>
+            <p className="sheet-note">The gallery couldn’t be loaded.</p>
           </section>
         ) : albums === null ? (
           <section className="sheet">
-            <p className="sheet-note">Loading the gallery...</p>
+            <p className="sheet-note">Loading the gallery…</p>
           </section>
         ) : albums.length === 0 ? (
           <section className="sheet">
@@ -218,7 +218,7 @@ export default function GalleryPage() {
                       }
                     >
                       {busy === album.downloadUrl
-                        ? "Preparing..."
+                        ? "Preparing…"
                         : `Download all ${albumFrames.length}`}
                     </button>
                   ) : (
@@ -263,7 +263,10 @@ export default function GalleryPage() {
                       <span className="frame-no">
                         {String(frame.index + 1).padStart(2, "0")}
                       </span>
-                      <span className="frame-title">
+                      <span
+                        className="frame-title"
+                        title={frame.title ?? undefined}
+                      >
                         {frame.title ?? "Untitled"}
                       </span>
                       {album.canDownload ? (
@@ -275,7 +278,7 @@ export default function GalleryPage() {
                             saveAs(frame.downloadUrl, `photo-${frame.id}`)
                           }
                         >
-                          {busy === frame.downloadUrl ? "..." : "Download"}
+                          {busy === frame.downloadUrl ? "…" : "Download"}
                         </button>
                       ) : (
                         <span className="frame-locked" aria-hidden="true">

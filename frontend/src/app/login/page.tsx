@@ -38,7 +38,7 @@ export default function LoginPage() {
       "/api/login/verify",
       { token: pendingToken, code, deviceId: getDeviceId() },
       {
-        busyLabel: "Verifying...",
+        busyLabel: "Verifying…",
         onSuccess: (result) => {
           localStorage.setItem("auth_token", result.token);
           window.location.href = "/dashboard";
@@ -88,7 +88,7 @@ export default function LoginPage() {
       "/api/login/resend",
       { token: pendingToken },
       {
-        busyLabel: "Resending...",
+        busyLabel: "Resending…",
         onSuccess: () => {
           setResends((n) => n + 1);
           setDigits(["", "", "", ""]);
@@ -116,7 +116,7 @@ export default function LoginPage() {
         deviceId: getDeviceId(),
       },
       {
-        busyLabel: "Signing in...",
+        busyLabel: "Signing in…",
         onSuccess: (result) => {
           if (result.twoFactorRequired) {
             setPendingToken(result.token);
@@ -142,7 +142,7 @@ export default function LoginPage() {
       "/api/signup",
       { email: data.get("email"), password },
       {
-        busyLabel: "Registering...",
+        busyLabel: "Registering…",
         onSuccess: () => {
           alert("Account created! You can now log in.");
           setMode("login");
@@ -166,7 +166,7 @@ export default function LoginPage() {
           <h1>Check your email</h1>
           <p>
             Enter the four-digit code we sent you. New devices are asked for one
-            even if you&apos;ve signed in before.
+            even if you’ve signed in before.
           </p>
 
           <div className="input-group">
@@ -195,7 +195,7 @@ export default function LoginPage() {
             </div>
             <div className="form-footer">
               <p>
-                Didn&apos;t get it?{" "}
+                Didn’t get it?{" "}
                 <a
                   href="#"
                   onClick={(e) => {
@@ -249,12 +249,12 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="login-button" disabled={busy}>
-            {busy ? "Signing in..." : "Sign in"}
+            {busy ? "Signing in…" : "Sign in"}
           </button>
 
           <div className="form-footer">
             <p>
-              Don&apos;t have an account?{" "}
+              Don’t have an account?{" "}
               <a
                 href="#"
                 onClick={(e) => {
@@ -269,7 +269,7 @@ export default function LoginPage() {
               <a href="/forgot-password">Forgot password?</a>
             </p>
             <p>
-              Didn&apos;t get a verification email?{" "}
+              Didn’t get a verification email?{" "}
               <a href="/resend-verification">Resend it</a>
             </p>
           </div>
@@ -277,7 +277,7 @@ export default function LoginPage() {
       ) : (
         <form className="login-form" onSubmit={handleSignup}>
           <h1>Create an account</h1>
-          <p>Set up access to a gallery you&apos;ve been sent.</p>
+          <p>Set up access to a gallery you’ve been sent.</p>
 
           <div className="input-group">
             <label htmlFor="signup-email">Email</label>
@@ -313,7 +313,7 @@ export default function LoginPage() {
           </div>
 
           <button type="submit" className="login-button" disabled={busy}>
-            {busy ? "Creating account..." : "Create account"}
+            {busy ? "Creating account…" : "Create account"}
           </button>
 
           <div className="form-footer">

@@ -177,7 +177,7 @@ export default function StudioPage() {
       </header>
 
       {state === "loading" ? (
-        <p className="sheet-note">Loading...</p>
+        <p className="sheet-note">Loading…</p>
       ) : state === "error" ? (
         <p className="sheet-note">
           This page is for artists. Ask an admin to grant you the role.
@@ -212,7 +212,7 @@ export default function StudioPage() {
 
           <div className="studio-actions">
             <button type="submit" className="login-button" disabled={saving}>
-              {saving ? "Saving..." : "Save"}
+              {saving ? "Saving…" : "Save"}
             </button>
             {saved ? <span className="studio-saved">Saved</span> : null}
           </div>

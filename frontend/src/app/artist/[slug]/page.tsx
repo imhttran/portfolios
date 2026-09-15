@@ -148,7 +148,7 @@ export default function ArtistPage({
         </main>
       ) : !artist ? (
         <main className="sheet">
-          <p className="sheet-note">Loading...</p>
+          <p className="sheet-note">Loading…</p>
         </main>
       ) : (
         <>
@@ -213,7 +213,10 @@ export default function ArtistPage({
                           <span className="frame-no">
                             {String(frame.index + 1).padStart(2, "0")}
                           </span>
-                          <span className="frame-title">
+                          <span
+                            className="frame-title"
+                            title={frame.title ?? undefined}
+                          >
                             {frame.title ?? "Untitled"}
                           </span>
                         </figcaption>

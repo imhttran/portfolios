@@ -23,7 +23,7 @@ export default function ResetPasswordPage() {
         password,
       },
       {
-        busyLabel: "Resetting...",
+        busyLabel: "Resetting…",
         onSuccess: (result) => {
           localStorage.setItem("auth_token", result.token);
           alert(result.message);
@@ -39,7 +39,7 @@ export default function ResetPasswordPage() {
       <PageTitle title={`Set a new password | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
         <h1>Set a new password</h1>
-        <p>You&apos;ll be signed in once it&apos;s saved.</p>
+        <p>You’ll be signed in once it’s saved.</p>
 
         <div className="input-group">
           <label htmlFor="password">New password</label>
@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <button type="submit" className="login-button" disabled={busy}>
-          {busy ? "Saving..." : "Save password"}
+          {busy ? "Saving…" : "Save password"}
         </button>
 
         <div className="form-footer">

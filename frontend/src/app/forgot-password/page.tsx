@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
       <PageTitle title={`Reset your password | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
         <h1>Reset your password</h1>
-        <p>We&apos;ll email you a link to set a new one.</p>
+        <p>We’ll email you a link to set a new one.</p>
 
         <div className="input-group">
           <label htmlFor="email">Email</label>
@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <button type="submit" className="login-button" disabled={busy}>
-          {busy ? "Sending..." : "Email me a link"}
+          {busy ? "Sending…" : "Email me a link"}
         </button>
 
         <div className="form-footer">

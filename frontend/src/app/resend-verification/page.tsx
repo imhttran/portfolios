@@ -22,7 +22,7 @@ export default function ResendVerificationPage() {
       <PageTitle title={`Resend verification | ${SITE.name}`} />
       <form className="login-form" onSubmit={handleSubmit}>
         <h1>Resend verification</h1>
-        <p>We&apos;ll send a new link to confirm your email.</p>
+        <p>We’ll send a new link to confirm your email.</p>
 
         <div className="input-group">
           <label htmlFor="email">Email</label>
@@ -36,7 +36,7 @@ export default function ResendVerificationPage() {
         </div>
 
         <button type="submit" className="login-button" disabled={busy}>
-          {busy ? "Sending..." : "Send a new link"}
+          {busy ? "Sending…" : "Send a new link"}
         </button>
 
         <div className="form-footer">

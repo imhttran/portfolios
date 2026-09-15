@@ -220,7 +220,7 @@ export default function PortfolioPage() {
         {failed ? (
           <section className="sheet">
             <p className="sheet-note">
-              The gallery couldn&apos;t be loaded.{" "}
+              The gallery couldn’t be loaded.{" "}
               <button
                 type="button"
                 className="frame-action"
@@ -232,7 +232,7 @@ export default function PortfolioPage() {
           </section>
         ) : albums === null ? (
           <section className="sheet">
-            <p className="sheet-note">Loading the gallery...</p>
+            <p className="sheet-note">Loading the gallery…</p>
           </section>
         ) : albums.length === 0 ? (
           <section className="sheet">
@@ -283,7 +283,10 @@ export default function PortfolioPage() {
                       <span className="frame-no">
                         {String(frame.index + 1).padStart(2, "0")}
                       </span>
-                      <span className="frame-title">
+                      <span
+                        className="frame-title"
+                        title={frame.title ?? undefined}
+                      >
                         {frame.title ?? "Untitled"}
                       </span>
                     </figcaption>

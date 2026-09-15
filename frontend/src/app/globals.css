@@ -10,6 +10,11 @@
    page becomes the paper and the type becomes the ink. The values below are
    the dark theme, and the theme block further down re-expresses the same
    tokens as light-dark().
+
+   The type floor is 12px for anything a visitor has to read - controls, table
+   headers, the note under a frame that says why it can't be downloaded.
+   Smaller than that is reserved for the marks that belong to the sheet itself:
+   frame numbers and credits.
    ========================================================================== */
 :root {
     color-scheme: dark;
@@ -179,6 +184,11 @@ body {
     font-size: 0.6875rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
+    /* Stated rather than left to the element: on an <h2> this would inherit the
+       browser's bold, and Plex Mono is loaded at 400 and 500 only - so the
+       browser emboldened the 500 face synthetically, and the same label class
+       rendered at two weights depending on which tag it sat in. */
+    font-weight: 400;
 }
 
 /* ==========================================================================
@@ -509,7 +519,7 @@ body {
 /* Which bucket this album is in, stated plainly. */
 .tier {
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--ink-300);
@@ -519,7 +529,7 @@ body {
 
 .tier-note {
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -632,6 +642,10 @@ body {
 .frame-title {
     font-size: 0.8125rem;
     color: var(--text-color);
+    /* A dense album can leave this a few characters wide, so the title is cut
+       with an ellipsis. The frames carry it in a title attribute for that case,
+       and the viewer shows it whole - between them the full value stays
+       reachable rather than only being hidden. */
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -706,7 +720,7 @@ body {
     margin-left: auto;
     flex: none;
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--ink-500);
@@ -737,10 +751,14 @@ body {
 }
 
 .about-body {
-    max-width: 60ch;
+    /* Deliberately no max-width here. A ch on this element resolves against its
+       own 16px rather than the bio's 17-22px, so what read as "60 characters"
+       measured 56. The cap belongs on the paragraph, where ch means what it
+       says. */
 }
 
 .about-bio {
+    max-width: 50ch;
     font-size: clamp(1.0625rem, 1.5vw, 1.375rem);
     font-weight: 300;
     line-height: 1.45;
@@ -1271,7 +1289,7 @@ body {
     display: block;
     margin-top: 4px;
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -1303,7 +1321,7 @@ body {
     background-color: transparent;
     color: var(--text-color);
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
@@ -1368,7 +1386,7 @@ body {
 .album-edit-toggle {
     width: fit-content;
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -1488,7 +1506,7 @@ body {
 
 .user-table th {
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -1497,7 +1515,6 @@ body {
 
 .user-table th.sortable {
     cursor: pointer;
-    user-select: none;
 }
 
 .user-table th.sortable:hover {
@@ -1524,7 +1541,7 @@ body {
     background-color: transparent;
     color: var(--text-color);
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
@@ -1556,7 +1573,7 @@ body {
     background-color: transparent;
     color: var(--text-color);
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
@@ -1623,7 +1640,7 @@ body {
     background: transparent;
     color: var(--text-color);
     font-family: var(--font-mono);
-    font-size: 0.5625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;

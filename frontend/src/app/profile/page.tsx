@@ -132,7 +132,7 @@ export default function ProfilePage() {
             type="url"
             id="linkedin"
             name="linkedin"
-            placeholder="https://linkedin.com/in/..."
+            placeholder="https://linkedin.com/in/…"
             title="Full URL to your LinkedIn profile"
           />
         </div>
@@ -143,7 +143,7 @@ export default function ProfilePage() {
             type="url"
             id="github"
             name="github"
-            placeholder="https://github.com/..."
+            placeholder="https://github.com/…"
             title="Full URL to your GitHub profile"
           />
         </div>

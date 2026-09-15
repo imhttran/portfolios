@@ -290,7 +290,7 @@ export default function DashboardPage() {
           <>
             Welcome back,{" "}
             <span id="user-email" className="highlight">
-              {me?.email ?? "..."}
+              {me?.email ?? "…"}
             </span>
             !
           </>
@@ -499,11 +499,11 @@ export default function DashboardPage() {
           <span>
             Role:{" "}
             <span id="user-role" className="highlight">
-              {me?.role ?? "..."}
+              {me?.role ?? "…"}
             </span>{" "}
             · Email verified:{" "}
             <span id="user-verified" className="highlight">
-              {me ? yesNo(me.emailVerified) : "..."}
+              {me ? yesNo(me.emailVerified) : "…"}
             </span>
           </span>
         }
