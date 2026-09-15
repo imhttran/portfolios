@@ -456,7 +456,8 @@ body {
     animation: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 90ms both;
 }
 
-.hero-meta {
+.hero-meta,
+.hero-contact {
     animation: rise 800ms cubic-bezier(0.2, 0.7, 0.2, 1) 200ms both;
 }
 
@@ -510,15 +511,6 @@ body {
     overflow: hidden;
 }
 
-/* The signature sits in the masthead's bottom-right corner, where a portrait's
-   hair strands would carry it away. It is positioned here and not on the
-   component, because where a signature goes is the page's business. */
-.hero-signature {
-    position: absolute;
-    right: 32px;
-    bottom: 20px;
-}
-
 .hero-statement {
     max-width: 800px;
     /* 37px over a 42px line, weight 400, centred: the reference's own statement,
@@ -555,6 +547,12 @@ body {
     color: inherit;
 }
 
+.hero-meta dd {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
 /* Otherwise the email renders as the browser's default blue, which is the one
    colour on the page and sits in the largest type after the statement. */
 .hero-meta a {
@@ -564,6 +562,21 @@ body {
 
 .hero-meta a:hover {
     text-decoration: underline;
+}
+
+/* Just the two glyphs, no label - sized well past the meta row's 15px so they
+   read as the hero's own call to action rather than a footnote under it. */
+.hero-contact {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    font-size: 1.75rem;
+}
+
+.hero-contact a {
+    color: var(--text-color);
 }
 
 /* ==========================================================================
@@ -1836,34 +1849,4 @@ body {
 .button-danger {
     background-color: var(--danger-color);
     color: #fff;
-}
-
-/* ==========================================================================
-   Signature
-
-   The handle, signed. A script face and a trailing stroke that thins away to
-   the right - the line a portrait's hair strands would carry on. Kept to one
-   place and one job, so the face never competes with the body.
-   ========================================================================== */
-.signature {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 2px;
-    color: var(--text-color);
-}
-
-.signature-name {
-    font-family: var(--font-script);
-    font-size: 2.75rem;
-    line-height: 1;
-    /* A signature leans. Written across a portrait, the rise to the right is
-       what carries the eye off the last letter and along the swash. */
-    transform: rotate(-2deg);
-}
-
-.signature-swash {
-    width: 96px;
-    height: 22px;
-    /* Rides on the baseline, trailing off where the text stops. */
-    margin-bottom: 2px;
 }

@@ -3,14 +3,12 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "@/lib/api";
 import { useSiteCopy } from "@/lib/useSiteCopy";
-import { SITE } from "@/lib/site";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { EmailLink } from "@/components/EmailLink";
 import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
-import { Signature } from "@/components/Signature";
 import { SiteBar } from "@/components/SiteBar";
 
 type RosterArtist = {
@@ -72,25 +70,11 @@ export default function PortfolioPage() {
       <section className="hero">
         <h1 className="hero-statement">{copy.statement}</h1>
 
-        <dl className="hero-meta">
-          <div>
-            <dt>Based in</dt>
-            <dd>{copy.location}</dd>
-          </div>
-          <div>
-            <dt>Albums</dt>
-            <dd>{albums?.length ?? "—"}</dd>
-          </div>
-          <div>
-            <dt>Contact</dt>
-            <dd>
-              <EmailLink address={copy.email} name={copy.name} />
-            </dd>
-          </div>
-        </dl>
-
-        <div className="hero-signature">
-          <Signature handle={copy.instagram || SITE.name} />
+        <div className="hero-contact">
+          <EmailLink address={copy.email} name={copy.name} />
+          {copy.instagram ? (
+            <InstagramLink handle={copy.instagram} name={copy.name} />
+          ) : null}
         </div>
       </section>
 

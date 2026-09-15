@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { Archivo, Great_Vibes, IBM_Plex_Mono } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { SITE } from "@/lib/site";
 
-// Two faces, three jobs: Archivo carries the display and body text, and Plex
-// Mono is reserved for the technical layer - frame numbers, metadata, the footer
-// - which is where a proof sheet keeps its facts. The signature is the third:
-// a script, only ever used to sign work, so it never competes with the body.
+// Two faces, two jobs: Archivo carries the display and body text, and Plex
+// Mono is reserved for the technical layer - frame numbers, metadata, the
+// footer - which is where a proof sheet keeps its facts.
 const archivo = Archivo({
   subsets: ["latin"],
   variable: "--font-archivo",
@@ -17,13 +16,6 @@ const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-plex-mono",
-  display: "swap",
-});
-
-const greatVibes = Great_Vibes({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-script",
   display: "swap",
 });
 
@@ -81,7 +73,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${plexMono.variable} ${greatVibes.variable}`}
+      className={`${archivo.variable} ${plexMono.variable}`}
       // The script below sets data-theme here before React hydrates, so the
       // server's markup and the client's differ by exactly that attribute.
       suppressHydrationWarning
