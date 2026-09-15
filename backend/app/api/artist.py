@@ -54,6 +54,7 @@ _PROFILE_COLUMNS = (
     ArtistProfile.tagline,
     ArtistProfile.statement,
     ArtistProfile.bio,
+    ArtistProfile.about,
     ArtistProfile.location,
     ArtistProfile.contact_email,
     ArtistProfile.phone,
@@ -72,6 +73,7 @@ def _serialize(row) -> dict:
         tagline=row.tagline,
         statement=row.statement,
         bio=row.bio,
+        about=row.about,
         location=row.location,
         contact_email=row.contact_email,
         phone=row.phone,
@@ -179,6 +181,7 @@ async def save_my_profile(
         profile.tagline = body.tagline.strip()
         profile.statement = body.statement.strip()
         profile.bio = body.bio.strip()
+        profile.about = body.about.strip()
         profile.location = body.location.strip()
         profile.contact_email = body.contact_email.strip()
         profile.phone = optional_trimmed(body.phone)

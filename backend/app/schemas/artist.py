@@ -21,6 +21,7 @@ class ArtistProfileInput(CamelModel):
     tagline: str = ""
     statement: str = ""
     bio: str = ""
+    about: str = ""
     location: str = ""
     contact_email: str = ""
     phone: str = ""
@@ -39,6 +40,7 @@ class ArtistProfileOut(CamelModel):
     tagline: str
     statement: str
     bio: str
+    about: str
     location: str
     contact_email: str
     phone: str | None = None

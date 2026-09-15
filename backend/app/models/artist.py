@@ -35,6 +35,10 @@ class ArtistProfile(Base):
     # The one sentence the hero is built around.
     statement: Mapped[str] = mapped_column(Text, nullable=False)
     bio: Mapped[str] = mapped_column(Text, nullable=False)
+    # The long-form About section, below the one-line bio. Optional, and
+    # paragraphs apart: blank-line-separated, since that's the one shape a
+    # plain textarea can hold without a second table for a list of strings.
+    about: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
     location: Mapped[str] = mapped_column(Text, nullable=False)
     contact_email: Mapped[str] = mapped_column(Text, nullable=False)
     phone: Mapped[str | None] = mapped_column(Text, nullable=True)

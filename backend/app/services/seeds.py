@@ -114,6 +114,23 @@ _DEV_PROFILE = {
         "Most of these were made without asking anyone to hold still. "
         "Nothing here is arranged."
     ),
+    "about": (
+        "Ethan is a filmmaker/art kid who became an internet creator while "
+        "trying to figure out how to be an artist. 😄\n\n"
+        "His stuff sits somewhere between cinematography, photography, "
+        "graphic design, art curation, and mildly existential thoughts about "
+        "being creative. His own site says he likes highlighting artists and "
+        "photographers who inspire him while talking about the struggles of "
+        "creating through his Uncurated Thoughts series.\n\n"
+        "There’s also a nice contradiction to the whole persona: the name is "
+        "“uncurated,” but everything looks suspiciously well curated. 😂 His "
+        "current bio philosophy is essentially make things even when they "
+        "might suck, which fits the vibe: experiment first, worry about "
+        "perfection later.\n\n"
+        "And he’s moving beyond just “Instagram creator.” He’s doing "
+        "cinematography/film work—he was DP on Two Sleepy People—along with "
+        "poster/design work and branded cinematic projects."
+    ),
     "location": "New York, NY",
     "contact_email": "tom.tran@email.com",
     "instagram": "ethan.uncurated",
@@ -180,6 +197,10 @@ _DEV_ARTIST2_PROFILE = {
     "bio": (
         "I photograph birds and the places they live. Most of it happens early, "
         "and most of it is quiet."
+    ),
+    "about": (
+        "People, places, good moments, questionable decisions. Ted’s just "
+        "collecting evidence that he was there. 📸"
     ),
     "location": "Sacramento, CA",
     "contact_email": "ted@example.com",

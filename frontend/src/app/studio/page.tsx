@@ -14,6 +14,7 @@ type Profile = {
   tagline: string;
   statement: string;
   bio: string;
+  about: string;
   location: string;
   contactEmail: string;
   phone: string | null;
@@ -46,6 +47,7 @@ const EMPTY: FormProfile = {
   tagline: "",
   statement: "",
   bio: "",
+  about: "",
   location: "",
   contactEmail: "",
   phone: "",
@@ -172,7 +174,7 @@ export default function StudioPage() {
         <textarea
           id={name}
           value={profile[name]}
-          rows={name === "statement" ? 2 : 4}
+          rows={name === "statement" ? 2 : name === "about" ? 10 : 4}
           onChange={(e) => setProfile({ ...profile, [name]: e.target.value })}
         />
       ) : (
@@ -258,9 +260,13 @@ export default function StudioPage() {
               textarea: true,
               hint: "One idea, plainly said. This is the largest type on the site.",
             })}
-            {field("bio", "About", {
+            {field("bio", "Bio", {
               textarea: true,
               hint: "Two or three sentences, in your own voice.",
+            })}
+            {field("about", "About", {
+              textarea: true,
+              hint: "The longer story, below your work. Leave a blank line between paragraphs. Leave it empty to skip the About section entirely.",
             })}
           </fieldset>
 

@@ -15,22 +15,28 @@ export const SITE = {
     "A creative guy with a camera, too many ideas, good taste, and just enough existential crisis to turn it all into art.",
   // The line under the statement, in the hero itself.
   bio: "Most of these were made without asking anyone to hold still. Nothing here is arranged.",
+  // The longer About section, below the one-line bio. Paragraphs are blank-line
+  // separated (see splitParagraphs) - the same shape the /studio textarea and
+  // the artist_profiles.about column use, so a page never has to know whether
+  // this came from here or from the API.
+  about:
+    "Ethan is a filmmaker/art kid who became an internet creator while trying to figure out how to be an artist. 😄\n\nHis stuff sits somewhere between cinematography, photography, graphic design, art curation, and mildly existential thoughts about being creative. His own site says he likes highlighting artists and photographers who inspire him while talking about the struggles of creating through his Uncurated Thoughts series.\n\nThere’s also a nice contradiction to the whole persona: the name is “uncurated,” but everything looks suspiciously well curated. 😂 His current bio philosophy is essentially make things even when they might suck, which fits the vibe: experiment first, worry about perfection later.\n\nAnd he’s moving beyond just “Instagram creator.” He’s doing cinematography/film work—he was DP on Two Sleepy People—along with poster/design work and branded cinematic projects.",
   email: "tom.tran@email.com",
   // Optional: blank values are left out of the footer rather than shown empty.
   phone: "",
   instagram: "",
 } as const;
 
-// The longer version of the About section, below the one-line bio. Ethan's own
-// words, not part of the editable profile - there's no field for it in
-// /studio, so it's static copy rather than something an artist page's own
-// data could override.
-export const ABOUT_MORE: string[] = [
-  "Ethan is a filmmaker/art kid who became an internet creator while trying to figure out how to be an artist. 😄",
-  "His stuff sits somewhere between cinematography, photography, graphic design, art curation, and mildly existential thoughts about being creative. His own site says he likes highlighting artists and photographers who inspire him while talking about the struggles of creating through his Uncurated Thoughts series.",
-  "There’s also a nice contradiction to the whole persona: the name is “uncurated,” but everything looks suspiciously well curated. 😂 His current bio philosophy is essentially make things even when they might suck, which fits the vibe: experiment first, worry about perfection later.",
-  "And he’s moving beyond just “Instagram creator.” He’s doing cinematography/film work—he was DP on Two Sleepy People—along with poster/design work and branded cinematic projects.",
-];
+// The About section's paragraphs are stored as one blank-line-separated blob
+// (see artist_profiles.about) rather than a list column, so the page splits it
+// back apart to render. An empty string yields no paragraphs, so callers can
+// treat that as "no About section" without a separate check.
+export function splitParagraphs(about: string): string[] {
+  return about
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
 
 export type SiteCopy = {
   slug: string;
@@ -39,6 +45,7 @@ export type SiteCopy = {
   location: string;
   statement: string;
   bio: string;
+  about: string;
   email: string;
   phone: string;
   instagram: string;
@@ -50,6 +57,7 @@ type ApiProfile = {
   tagline: string;
   statement: string;
   bio: string;
+  about: string;
   location: string;
   contactEmail: string;
   phone: string | null;
@@ -67,6 +75,7 @@ export function copyFrom(profile: ApiProfile | null | undefined): SiteCopy {
     location: profile.location || SITE.location,
     statement: profile.statement || SITE.statement,
     bio: profile.bio || SITE.bio,
+    about: profile.about || SITE.about,
     email: profile.contactEmail || SITE.email,
     phone: profile.phone ?? SITE.phone,
     instagram: profile.instagram ?? SITE.instagram,

@@ -18,6 +18,7 @@ export type Artist = {
   tagline: string;
   statement: string;
   bio: string;
+  about: string;
   location: string;
   contactEmail: string;
   phone: string | null;

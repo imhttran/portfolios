@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { LOGIN_PATH } from "@/lib/api";
-import { ABOUT_MORE, SITE } from "@/lib/site";
+import { SITE, splitParagraphs } from "@/lib/site";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { useRoster } from "@/lib/useRoster";
 import { AlbumIndex } from "@/components/AlbumIndex";
@@ -44,9 +44,7 @@ export default function ArtistPage({
         role={artist?.tagline ?? ""}
         links={[
           { href: "#work", label: "Work" },
-          ...(artist?.slug === SITE.slug
-            ? [{ href: "#about", label: "About" }]
-            : []),
+          ...(artist?.about ? [{ href: "#about", label: "About" }] : []),
           ...(roster.length > 1
             ? [{ href: "#artists", label: "Artists" }]
             : []),
@@ -119,11 +117,11 @@ export default function ArtistPage({
             <SheetNote>No albums are published yet.</SheetNote>
           )}
 
-          {artist.slug === SITE.slug ? (
+          {artist.about ? (
             <section className="about" id="about">
               <h2 className="mono">About</h2>
               <div className="about-body">
-                {ABOUT_MORE.map((paragraph, index) => (
+                {splitParagraphs(artist.about).map((paragraph, index) => (
                   <p className="about-more" key={index}>
                     {paragraph}
                   </p>

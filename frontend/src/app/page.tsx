@@ -1,6 +1,6 @@
 "use client";
 
-import { ABOUT_MORE } from "@/lib/site";
+import { splitParagraphs } from "@/lib/site";
 import { useSiteCopy } from "@/lib/useSiteCopy";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { useRoster } from "@/lib/useRoster";
@@ -99,7 +99,7 @@ export default function PortfolioPage() {
       <section className="about" id="about">
         <h2 className="mono">About</h2>
         <div className="about-body">
-          {ABOUT_MORE.map((paragraph, index) => (
+          {splitParagraphs(copy.about).map((paragraph, index) => (
             <p className="about-more" key={index}>
               {paragraph}
             </p>
