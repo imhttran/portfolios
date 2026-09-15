@@ -46,6 +46,7 @@ export default function PortfolioPage() {
           with one black band is the whole idea. */}
       <section className="hero">
         <h1 className="hero-statement">{copy.statement}</h1>
+        <p className="hero-sub">{copy.bio}</p>
 
         <div className="hero-contact">
           <EmailLink address={copy.email} name={copy.name} />
@@ -98,7 +99,6 @@ export default function PortfolioPage() {
       <section className="about" id="about">
         <h2 className="mono">About</h2>
         <div className="about-body">
-          <p className="about-bio">{copy.bio}</p>
           {ABOUT_MORE.map((paragraph, index) => (
             <p className="about-more" key={index}>
               {paragraph}

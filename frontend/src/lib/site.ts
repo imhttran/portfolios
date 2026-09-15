@@ -12,9 +12,9 @@ export const SITE = {
   location: "New York, NY",
   // The hero statement. One idea, plainly said - not a tagline.
   statement:
-    "Most of these were made without asking anyone to hold still. Nothing here is arranged.",
-  // The About band on the landing page. Two or three sentences, in your voice.
-  bio: "A creative guy with a camera, too many ideas, good taste, and just enough existential crisis to turn it all into art.",
+    "A creative guy with a camera, too many ideas, good taste, and just enough existential crisis to turn it all into art.",
+  // The line under the statement, in the hero itself.
+  bio: "Most of these were made without asking anyone to hold still. Nothing here is arranged.",
   email: "tom.tran@email.com",
   // Optional: blank values are left out of the footer rather than shown empty.
   phone: "",
@@ -26,7 +26,7 @@ export const SITE = {
 // /studio, so it's static copy rather than something an artist page's own
 // data could override.
 export const ABOUT_MORE: string[] = [
-  "Ethan is a filmmaker/art kid who accidentally became an internet creator while trying to figure out how to be an artist. 😄",
+  "Ethan is a filmmaker/art kid who became an internet creator while trying to figure out how to be an artist. 😄",
   "His stuff sits somewhere between cinematography, photography, graphic design, art curation, and mildly existential thoughts about being creative. His own site says he likes highlighting artists and photographers who inspire him while talking about the struggles of creating through his Uncurated Thoughts series.",
   "There’s also a nice contradiction to the whole persona: the name is “uncurated,” but everything looks suspiciously well curated. 😂 His current bio philosophy is essentially make things even when they might suck, which fits the vibe: experiment first, worry about perfection later.",
   "And he’s moving beyond just “Instagram creator.” He’s doing cinematography/film work—he was DP on Two Sleepy People—along with poster/design work and branded cinematic projects.",

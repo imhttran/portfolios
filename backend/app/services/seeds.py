@@ -107,12 +107,12 @@ _DEV_PROFILE = {
     "display_name": "Ethan Tran",
     "tagline": "Photographer, DP",
     "statement": (
-        "Most of these were made without asking anyone to hold still. "
-        "Nothing here is arranged."
-    ),
-    "bio": (
         "A creative guy with a camera, too many ideas, good taste, and just "
         "enough existential crisis to turn it all into art."
+    ),
+    "bio": (
+        "Most of these were made without asking anyone to hold still. "
+        "Nothing here is arranged."
     ),
     "location": "New York, NY",
     "contact_email": "tom.tran@email.com",

@@ -44,7 +44,9 @@ export default function ArtistPage({
         role={artist?.tagline ?? ""}
         links={[
           { href: "#work", label: "Work" },
-          { href: "#about", label: "About" },
+          ...(artist?.slug === SITE.slug
+            ? [{ href: "#about", label: "About" }]
+            : []),
           ...(roster.length > 1
             ? [{ href: "#artists", label: "Artists" }]
             : []),
@@ -69,6 +71,7 @@ export default function ArtistPage({
         <>
           <section className="hero">
             <h1 className="hero-statement">{artist.statement}</h1>
+            <p className="hero-sub">{artist.bio}</p>
             <div className="hero-contact">
               <EmailLink
                 address={artist.contactEmail}
@@ -116,19 +119,18 @@ export default function ArtistPage({
             <SheetNote>No albums are published yet.</SheetNote>
           )}
 
-          <section className="about" id="about">
-            <h2 className="mono">About</h2>
-            <div className="about-body">
-              <p className="about-bio">{artist.bio}</p>
-              {artist.slug === SITE.slug
-                ? ABOUT_MORE.map((paragraph, index) => (
-                    <p className="about-more" key={index}>
-                      {paragraph}
-                    </p>
-                  ))
-                : null}
-            </div>
-          </section>
+          {artist.slug === SITE.slug ? (
+            <section className="about" id="about">
+              <h2 className="mono">About</h2>
+              <div className="about-body">
+                {ABOUT_MORE.map((paragraph, index) => (
+                  <p className="about-more" key={index}>
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            </section>
+          ) : null}
         </>
       )}
 

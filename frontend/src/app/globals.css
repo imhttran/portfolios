@@ -525,6 +525,19 @@ body {
     text-wrap: balance;
 }
 
+/* The line under the statement - quieter and smaller, so it reads as a second
+   thought rather than competing with the one above it. */
+.hero-sub {
+    max-width: 640px;
+    margin-top: -16px;
+    font-size: 1.1875rem;
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--text-muted);
+    text-align: center;
+    text-wrap: balance;
+}
+
 /* Just the two glyphs, no label - sized well past the meta row's 15px so they
    read as the hero's own call to action rather than a footnote under it. */
 .hero-contact {
