@@ -53,17 +53,17 @@ rebuild the data. Add Alembic if you outgrow this.
 
 Tables:
 
-| Table             | Purpose                                                                      |
-| ----------------- | ---------------------------------------------------------------------------- |
-| `users`           | accounts: email, scrypt password, role, verify/reset tokens                  |
-| `user_profiles`   | a user's name, optional (`ON DELETE CASCADE`)                                |
-| `artist_profiles` | the public copy each artist edits in `/studio`, and their URL slug           |
-| `albums`          | a portfolio, its owning artist, and its tier on the free/paid/premium ladder |
-| `photos`          | ordered photos: original + preview + thumbnail, and their dimensions         |
-| `subscriptions`   | one customer's access to one artist, at a level (`paid`/`premium`)           |
-| `email_queue`     | outbound mail (processed by the worker in `services/email_queue.py`)         |
-| `user_devices`    | browsers that skip 2FA, until their trust lapses                             |
-| `login_codes`     | pending 2FA codes                                                            |
+| Table             | Purpose                                                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `users`           | accounts: email, scrypt password, role, verify/reset tokens                                                                      |
+| `user_profiles`   | a user's name, optional (`ON DELETE CASCADE`)                                                                                    |
+| `artist_profiles` | the public copy each artist edits in `/studio`, their URL slug, the theme their own page wears, and their sheet's column ceiling |
+| `albums`          | a portfolio, its owning artist, and its tier on the free/paid/premium ladder                                                     |
+| `photos`          | ordered photos: original + preview + thumbnail, and their dimensions                                                             |
+| `subscriptions`   | one customer's access to one artist, at a level (`paid`/`premium`)                                                               |
+| `email_queue`     | outbound mail (processed by the worker in `services/email_queue.py`)                                                             |
+| `user_devices`    | browsers that skip 2FA, until their trust lapses                                                                                 |
+| `login_codes`     | pending 2FA codes                                                                                                                |
 
 Dev seeds (in `backend/app/services/seeds.py`, only when `NODE_ENV=development`),
 all with the password `Password1234!`:

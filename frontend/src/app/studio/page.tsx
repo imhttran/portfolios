@@ -19,14 +19,19 @@ type Profile = {
   phone: string | null;
   instagram: string | null;
   gridColumns: number | null;
+  theme: string | null;
 };
 
 // The form works on strings throughout: a null in a controlled input would flip
 // it to uncontrolled, and React warns about exactly that.
-type FormProfile = Omit<Profile, "phone" | "instagram" | "gridColumns"> & {
+type FormProfile = Omit<
+  Profile,
+  "phone" | "instagram" | "gridColumns" | "theme"
+> & {
   phone: string;
   instagram: string;
   gridColumns: string;
+  theme: string;
 };
 
 type Me = {
@@ -46,6 +51,7 @@ const EMPTY: FormProfile = {
   phone: "",
   instagram: "",
   gridColumns: "",
+  theme: "",
 };
 
 function fromApi(profile: Profile | null): FormProfile {
@@ -56,6 +62,7 @@ function fromApi(profile: Profile | null): FormProfile {
     instagram: profile.instagram ?? "",
     gridColumns:
       profile.gridColumns === null ? "" : String(profile.gridColumns),
+    theme: profile.theme ?? "",
   };
 }
 
@@ -233,6 +240,15 @@ export default function StudioPage() {
                 })),
               ],
               hint: "A ceiling on how dense a sheet gets. Auto fits each album to the window; a number keeps every album at that many across or fewer.",
+            })}
+            {field("theme", "Theme", {
+              choices: [
+                { value: "", label: "Site default" },
+                { value: "dark", label: "Dark" },
+                { value: "light", label: "Light" },
+                { value: "paper", label: "Paper" },
+              ],
+              hint: "How your own page is printed. This is your page only — the front page shows everyone's work, so it keeps the site's theme. A visitor who has picked light or dark themselves keeps their choice.",
             })}
           </fieldset>
 

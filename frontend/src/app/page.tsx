@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { API_BASE, LOGIN_PATH } from "@/lib/api";
+import { API_BASE } from "@/lib/api";
 import { useSiteCopy } from "@/lib/useSiteCopy";
-import { usePortfolio } from "@/lib/usePortfolio";
-import { AlbumSheet, SheetNote } from "@/components/AlbumSheet";
-import { BackToTop } from "@/components/BackToTop";
+import { useAlbumIndex } from "@/lib/usePortfolio";
+import { AlbumIndex } from "@/components/AlbumIndex";
+import { SheetNote } from "@/components/AlbumSheet";
 import { PageTitle } from "@/components/PageTitle";
-import { PhotoViewer } from "@/components/PhotoViewer";
 import { SiteBar } from "@/components/SiteBar";
 
 type RosterArtist = {
@@ -17,10 +16,15 @@ type RosterArtist = {
   location: string;
 };
 
+/**
+ * The front page: the statement, who is on the site, and an index of the work.
+ *
+ * An index rather than the work itself - the design reference does the same, and
+ * it is what keeps a portfolio's front page readable rather than a twenty-minute
+ * scroll. The photographs are one click away, on the album's own page.
+ */
 export default function PortfolioPage() {
-  const { sections, frames, failed, loading, retry } = usePortfolio();
-  const [viewing, setViewing] = useState<number | null>(null);
-  const [heroLoaded, setHeroLoaded] = useState(false);
+  const { albums, failed, loading, retry } = useAlbumIndex();
   const [roster, setRoster] = useState<RosterArtist[]>([]);
   const copy = useSiteCopy();
 
@@ -41,21 +45,6 @@ export default function PortfolioPage() {
     };
   }, []);
 
-  const heroUrl = frames[0] ? `${API_BASE}${frames[0].previewUrl}` : null;
-
-  // Fade the hero image in only once it's decoded, so the page never shows a
-  // half-painted frame over the statement. A cached image fires no onload.
-  useEffect(() => {
-    if (!heroUrl) return;
-    const image = new Image();
-    image.src = heroUrl;
-    if (image.complete) {
-      setHeroLoaded(true);
-      return;
-    }
-    image.onload = () => setHeroLoaded(true);
-  }, [heroUrl]);
-
   return (
     <div className="site">
       <PageTitle title={`${copy.name} — ${copy.role}`} />
@@ -73,18 +62,10 @@ export default function PortfolioPage() {
         ]}
       />
 
+      {/* The reference's masthead: one flat dark band carrying the statement.
+          No photograph behind it - the photographs come below, and a white page
+          with one black band is the whole idea. */}
       <section className="hero">
-        {heroUrl ? (
-          <>
-            <div
-              className={`hero-media${heroLoaded ? " is-loaded" : ""}`}
-              style={{ backgroundImage: `url(${heroUrl})` }}
-              aria-hidden="true"
-            />
-            <div className="hero-scrim" aria-hidden="true" />
-          </>
-        ) : null}
-
         <h1 className="hero-statement">{copy.statement}</h1>
 
         <dl className="hero-meta">
@@ -93,8 +74,8 @@ export default function PortfolioPage() {
             <dd>{copy.location}</dd>
           </div>
           <div>
-            <dt>Frames</dt>
-            <dd>{frames.length || "—"}</dd>
+            <dt>Albums</dt>
+            <dd>{albums?.length ?? "—"}</dd>
           </div>
           <div>
             <dt>Contact</dt>
@@ -128,31 +109,22 @@ export default function PortfolioPage() {
         </section>
       ) : null}
 
-      <main id="work">
-        {failed ? (
-          <SheetNote>
-            The gallery couldn’t be loaded.{" "}
-            <button type="button" className="frame-action" onClick={retry}>
-              Try again
-            </button>
-          </SheetNote>
-        ) : loading ? (
-          <SheetNote>Loading the gallery…</SheetNote>
-        ) : sections.length === 0 ? (
-          <SheetNote>
-            No albums are published yet. Published albums appear here.
-          </SheetNote>
-        ) : (
-          sections.map(({ album, frames: albumFrames }) => (
-            <AlbumSheet
-              key={album.id}
-              album={album}
-              frames={albumFrames}
-              onOpen={setViewing}
-            />
-          ))
-        )}
-      </main>
+      {failed ? (
+        <SheetNote>
+          The gallery couldn’t be loaded.{" "}
+          <button type="button" className="frame-action" onClick={retry}>
+            Try again
+          </button>
+        </SheetNote>
+      ) : loading || !albums ? (
+        <SheetNote>Loading the gallery…</SheetNote>
+      ) : albums.length === 0 ? (
+        <SheetNote>
+          No albums are published yet. Published albums appear here.
+        </SheetNote>
+      ) : (
+        <AlbumIndex albums={albums} />
+      )}
 
       <section className="about" id="about">
         <h2 className="mono">About</h2>
@@ -173,24 +145,11 @@ export default function PortfolioPage() {
         <span>
           <a href={`mailto:${copy.email}`}>{copy.email}</a>
           {copy.instagram ? <> · {copy.instagram}</> : null}
-          {" · "}
-          <a href={LOGIN_PATH}>Sign in</a>
         </span>
         <span>
           © {new Date().getFullYear()} {copy.name}. All rights reserved.
         </span>
       </footer>
-
-      {viewing !== null ? (
-        <PhotoViewer
-          items={frames}
-          index={viewing}
-          onClose={() => setViewing(null)}
-          onIndexChange={setViewing}
-        />
-      ) : null}
-
-      <BackToTop />
     </div>
   );
 }

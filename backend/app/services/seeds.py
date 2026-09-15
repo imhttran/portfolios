@@ -113,8 +113,22 @@ _DEV_PROFILE = {
     "bio": "Placeholder. Say who you are, what you make, and who you make it for.",
     "location": "Austin, TX",
     "contact_email": "tom.tran@email.com",
-    # Two across: the frames are the point, so they get the room.
+    # Two across, uniformly. The design reference this site is built on lays its
+    # project archive out as a flat two-up grid of fixed-ratio tiles - one column
+    # count, one tile size, for every entry - and that sameness is what makes it
+    # read as composed rather than assembled. It also settles the fill question:
+    # that archive runs 4.8 screens tall on a 900px window, so it is meant to be
+    # scrolled, not packed into the frame. Two across makes filling impossible for
+    # anything past a handful of photographs (twelve photos is six rows, and six
+    # rows of a 3:2 crop cannot reach the bottom of a normal window at any crop
+    # wider than 2.5:1), which is a property of the reference's look, not a
+    # defect against it. Auto is the opposite trade: every album fills, and the
+    # column count varies per album. See docs/FEATURE.md.
     "grid_columns": 2,
+    # No theme of their own. The site's default is now the reference's white, and
+    # a black artist page on a white site would be the one surface left that
+    # didn't look like it. The feature is still there - dark, light and paper are
+    # all available to pick in /studio - it just isn't demoed by default.
 }
 
 
@@ -166,8 +180,17 @@ _DEV_ARTIST2_PROFILE = {
     "location": "Sacramento, CA",
     "contact_email": "ted@example.com",
     "instagram": "@tednguy",
-    # Four across: a wetlands sheet at two is a lot of scrolling.
-    "grid_columns": 4,
+    # Two across, matching Ethan: one column count for the whole site is what
+    # makes the sheets read as one publication rather than two. The cost is real
+    # and worth knowing before anyone raises this again - Ted's albums are 24, 24
+    # and 27 photographs, so at two across Wetlands alone is about fourteen rows
+    # and some 7,200px of scroll. At four across it was 1,656px. The design
+    # reference has the same property and accepts it: a uniform two-up grid,
+    # scrolled rather than packed into the frame.
+    "grid_columns": 2,
+    # No theme of their own either, for the same reason as Ethan's: on a white
+    # site, a cream artist page would be the one surface left that didn't look
+    # like it.
 }
 
 

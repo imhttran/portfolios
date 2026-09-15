@@ -1,15 +1,17 @@
 /* ==========================================================================
    Design tokens
 
-   Monochrome, and still no accent colour: the only colours that carry meaning
-   here are the ink/paper pair and a muted red reserved for destructive
-   actions.
+   Skinned to the design reference (tywebbmead.com): a white page, black type,
+   no accent colour, and a single muted red reserved for destructive actions.
+   Measured from it at 1440: 43px of page gutter, 13px between tiles, 2 columns,
+   and not a single uppercase or letter-spaced label anywhere on it.
 
    Ink and paper name roles rather than colours. --ink-950 is always the page
-   and --paper is always the type, so in light mode the two trade places: the
-   page becomes the paper and the type becomes the ink. The values below are
-   the dark theme, and the theme block further down re-expresses the same
-   tokens as light-dark().
+   and --paper is always the type, so in the dark theme the two trade places:
+   the page becomes the ink and the type becomes the paper. The values below are
+   the site's default - the reference's white - and the theme block further down
+   re-expresses the same tokens as light-dark() so the dark theme still exists
+   for anyone who picks it.
 
    The type floor is 12px for anything a visitor has to read - controls, table
    headers, the note under a frame that says why it can't be downloaded.
@@ -17,20 +19,25 @@
    frame numbers and credits.
    ========================================================================== */
 :root {
-    color-scheme: dark;
+    /* The reference is a white site, full stop: it has no dark mode and it does
+       not follow the system preference. Defaulting to the system preference
+       would hand a dark-system visitor a page nothing like the one they asked
+       for, so the site stays light until somebody picks otherwise. */
+    color-scheme: light;
 
-    /* Ink: the page and its surfaces, darkest first. */
-    --ink-950: #08080a;
-    --ink-900: #101013;
-    --ink-800: #17171b;
-    --ink-700: #26262c; /* hairlines */
-    --ink-500: #6b6b73;
-    --ink-400: #8d8d95;
-    --ink-300: #b3b3ba;
+    /* Ink: the page and its surfaces. White, because the reference's only dark
+       surface is the masthead, which carries its own literal colour. */
+    --ink-950: #ffffff;
+    --ink-900: #ffffff;
+    --ink-800: #f7f7f6;
+    --ink-700: #e6e6e3; /* hairlines */
+    --ink-500: #76767a;
+    --ink-400: #55555a;
+    --ink-300: #33333a;
 
     /* Paper: the type and anything sitting on top of ink. */
-    --paper: #f1f0ec;
-    --paper-dim: #cac9c3;
+    --paper: #000000;
+    --paper-dim: #8a8a90;
 
     /* Semantic tokens. Names kept from the template so existing pages keep
        working; only the values changed. */
@@ -41,21 +48,31 @@
     --text-muted: var(--ink-400);
     --placeholder-color: var(--ink-500);
     --border-color: var(--ink-700);
-    /* On a monochrome page the "primary" action is simply paper on ink. */
+    /* On a monochrome page the "primary" action is simply ink on paper. */
     --primary-color: var(--paper);
-    --primary-hover: #ffffff;
-    --on-primary: var(--ink-950);
+    --primary-hover: #33333a;
+    --on-primary: #ffffff;
     --danger-color: #c4564e;
-    --danger-hover: #d96b62;
-    --focus-ring: rgba(241, 240, 236, 0.24);
+    --danger-hover: #a3372f;
+    --focus-ring: rgba(0, 0, 0, 0.24);
     /* A rule drawn in the type's colour instead of the border's, for hairlines
        that sit on a photograph - where a border colour would be describing a
        surface that isn't there. */
-    --rule-veil: rgba(241, 240, 236, 0.28);
+    --rule-veil: rgba(0, 0, 0, 0.28);
     --card-shadow: none;
 
-    /* Page rhythm */
-    --gutter: clamp(16px, 4vw, 56px);
+    /* Page rhythm.
+
+       The reference's gutter is a fixed 43px on a 1440 window - it does not grow
+       with the viewport the way a vw value does, which is why its content box
+       reads as a settled column rather than something that swells. 3vw lands on
+       43 at 1440 and keeps shrinking below that for a phone. */
+    --gutter: clamp(20px, 3vw, 43px);
+    /* The gutter between tiles. The reference puts 13px of white between its
+       covers in both axes, where this design used to butt them with a hairline;
+       a 13px gap on a white page is what makes the images read as separate
+       photographs rather than one ruled sheet. */
+    --gap: 13px;
     --rule: 1px solid var(--border-color);
 
     --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
@@ -72,73 +89,154 @@
    islands below pin it back where a photograph, not the page, decides the
    contrast.
 
-   All of it sits behind the support query, so a browser that predates
-   light-dark() keeps the token block above unchanged - the dark theme, exactly
-   as it was - instead of getting a half-applied one. That is also why the
-   switch stays hidden there: nothing below runs, so it would have nothing to
-   switch.
+   The reference has no dark theme at all, and no system preference to follow.
+   Keeping the dark theme here is a concession to a feature this app already
+   has, not part of the look: it is opt-in, and nobody sees it unless they pick
+   it or their system asked for it and they never said otherwise. A browser that
+   predates light-dark() keeps the token block above unchanged - the site's
+   white, exactly as the reference renders - instead of getting a half-applied
+   one. That is also why the switch stays hidden there: nothing below runs, so it
+   would have nothing to switch.
 
-   With no choice stored the first rule follows the system preference, which is
-   what a visitor with scripting off gets too.
+   With no choice stored the site stays light, which is what a visitor with
+   scripting off gets too.
    ========================================================================== */
 @supports (color: light-dark(#000, #fff)) {
     :root {
-        color-scheme: light dark;
+        color-scheme: light;
 
-        /* The paper, the surfaces stained into it, then the hairlines. */
-        --ink-950: light-dark(#f1f0ec, #08080a);
-        --ink-900: light-dark(#eae8e3, #101013);
-        --ink-800: light-dark(#e0ded8, #17171b);
-        --ink-700: light-dark(#d5d3cb, #26262c);
+        /* The paper, the surfaces stained into it, then the hairlines. The
+           light column is the site's default - the reference's own white and
+           black, so the two read as the same page rather than a warmed grey
+           variant of it. */
+        --ink-950: light-dark(#ffffff, #08080a);
+        --ink-900: light-dark(#ffffff, #101013);
+        --ink-800: light-dark(#f7f7f6, #17171b);
+        --ink-700: light-dark(#e6e6e3, #26262c);
 
-        /* The three text steps. Each lands within a fifth of a stop of its
-           dark value against the page it renders on, so light mode reads as
-           the same design rather than a second one: type 17.1:1, muted 5.8,
-           soft 8.4, quiet 4.7, hairlines 1.3. */
-        --ink-500: light-dark(#6a6a72, #6b6b73);
-        --ink-400: light-dark(#5c5c63, #8d8d95);
-        --ink-300: light-dark(#45454b, #b3b3ba);
-        --paper: light-dark(#0c0c0e, #f1f0ec);
-        --paper-dim: light-dark(#b9b7b0, #cac9c3);
+        /* The three text steps against a white page: type 21:1, muted 7.5,
+           soft 12.6, quiet 4.6. The dark column holds its old ratios (type
+           17.1, muted 5.8, soft 8.4, quiet 4.7), so a theme switch is a change
+           of paper rather than a change of legibility. */
+        --ink-500: light-dark(#76767a, #6b6b73);
+        --ink-400: light-dark(#55555a, #8d8d95);
+        --ink-300: light-dark(#33333a, #b3b3ba);
+        --paper: light-dark(#000000, #f1f0ec);
+        --paper-dim: light-dark(#8a8a90, #cac9c3);
 
-        /* Paper on ink becomes ink on paper, so this hover has to travel the
-           other way: brighter than the fill it sits on is only correct when
-           the fill is the dark one. */
-        --primary-hover: light-dark(#2c2c30, #ffffff);
+        /* Ink on paper becomes paper on ink, so this hover has to travel the
+           other way in the dark theme: brighter than the fill it sits on is
+           only correct when the fill is the dark one. */
+        --primary-hover: light-dark(#33333a, #ffffff);
         --danger-color: light-dark(#a3372f, #c4564e);
         --danger-hover: light-dark(#8d2c25, #d96b62);
         --focus-ring: light-dark(
-            rgba(12, 12, 14, 0.24),
+            rgba(0, 0, 0, 0.24),
             rgba(241, 240, 236, 0.24)
         );
-        --rule-veil: light-dark(
-            rgba(12, 12, 14, 0.28),
-            rgba(241, 240, 236, 0.28)
-        );
+        --rule-veil: light-dark(rgba(0, 0, 0, 0.28), rgba(241, 240, 236, 0.28));
     }
 
-    /* An explicit choice, which is what the switch writes. */
+    /* An explicit choice, which is what the switch writes. There is no
+       [data-theme="light"] default to write: the block above already is light,
+       so the attribute is only needed to hold the dark theme against a system
+       that would rather not. */
     :root[data-theme="dark"] {
         color-scheme: dark;
     }
 
-    :root[data-theme="light"] {
+    /* ======================================================================
+       The artist's theme
+
+       Only ever on the artist's own page, and only from their own profile.
+       Scoped to that page's container rather than to :root, because the front
+       page and /gallery show every artist's work at once and so have no single
+       answer to give - two artists in two palettes is two sites glued
+       together. Per sheet would be worse still: the page would change identity
+       as you scrolled it.
+
+       A visitor's explicit choice outranks the artist: [data-theme-chosen] is
+       what the switch and the pre-paint script write only when somebody has
+       actually picked, and with it present these rules fall away and the
+       container inherits :root's theme.
+
+       Two declarations come along for free and one has to be restated. The
+       background and the color do, because both inherit as already-computed
+       values - the same trap the islands above document. The tokens do not:
+       a pair like light-dark() travels down the tree as a token stream and is
+       resolved against whatever color-scheme the element using it has, which
+       is why dark and light below need nothing but color-scheme, while paper
+       - not being a pair of anything - has to restate its values.
+       ====================================================================== */
+    :root:not([data-theme-chosen]) [data-artist-theme] {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+    }
+
+    :root:not([data-theme-chosen]) [data-artist-theme="dark"] {
+        color-scheme: dark;
+    }
+
+    :root:not([data-theme-chosen]) [data-artist-theme="light"] {
         color-scheme: light;
+    }
+
+    /* Paper: the light theme warmed towards a cream stock, so it reads as a
+       different press run rather than a different design. Each value was solved
+       for the light theme's own contrast against its own page, so the two are
+       equally legible and the ratio block at the top of this file stays true for
+       both. Measured against their respective pages: type 17.16:1, muted 5.81,
+       soft 8.34, quiet 4.70 - the light theme's 17.14 / 5.82 / 8.35 / 4.70 to
+       within the rounding of a hex triplet, which is as close as a colour can
+       be written down. The hairline is the one that moved further (1.40 against
+       1.31); hairlines carry no meaning of their own here, and on a warmer page
+       a slightly stronger rule reads as the same weight. */
+    :root:not([data-theme-chosen]) [data-artist-theme="paper"] {
+        color-scheme: light;
+
+        --ink-950: #f7f3e8;
+        --ink-900: #efe9db;
+        --ink-800: #e6dfcd;
+        --ink-700: #d8cfb9;
+        --ink-500: #746c58;
+        --ink-400: #655e4c;
+        --ink-300: #4c473a;
+        --paper: #11100d;
+        --paper-dim: #bfb9ab;
+
+        /* Restated rather than left to inherit, and this is the subtle one: a
+           custom property is substituted where it is *declared*, so :root's
+           --bg-color already holds :root's --ink-950 as a token stream. The
+           colours above would therefore reach nothing on their own. */
+        --bg-color: var(--ink-950);
+        --surface-color: var(--ink-900);
+        --raised-color: var(--ink-800);
+        --text-color: var(--paper);
+        --text-muted: var(--ink-400);
+        --placeholder-color: var(--ink-500);
+        --border-color: var(--ink-700);
+        --primary-color: var(--paper);
+        --primary-hover: #2c2c30;
+        --on-primary: var(--ink-950);
+        --danger-color: #9c3c2e;
+        --danger-hover: #b04a39;
+        --focus-ring: rgba(17, 16, 13, 0.24);
+        --rule-veil: rgba(17, 16, 13, 0.28);
+        /* --rule is in here for the same reason, one step further along: it was
+           declared as `1px solid var(--border-color)` on :root, so it carries
+           :root's hairline already substituted into it. */
+        --rule: 1px solid var(--border-color);
     }
 }
 
-/* Dark whatever the theme, because here the photograph behind the type sets
-   the contrast, not the page: the hero with a frame in it, the bar floating
-   over that hero, and the viewer. color-scheme is inherited, so every token
-   used inside them resolves to its dark value - the alternative is restating
-   those values, which is the same thing with somewhere for it to drift apart.
+/* Dark whatever the theme, because the viewer floats over a photograph and the
+   photograph sets the contrast there, not the page. The masthead is its own
+   thing - a flat dark block with literal colours, since it is the one surface
+   the reference keeps dark on its white site - so only the viewer is an island.
 
-   color is restated for the same reason, one step along: it inherits from
-   body as an already-computed value, so without this the type here keeps the
-   page's colour while everything drawn from a token turns dark. The statement
-   over the hero was the visible symptom - near-black type on a black scrim. */
-.hero:has(.hero-scrim),
-.site-bar--over:has(+ .hero .hero-scrim),
+   color is restated for the same reason: it inherits from body as an
+   already-computed value, so without this the type here would keep the page's
+   colour while everything drawn from a token turned dark. */
 .viewer {
     color-scheme: dark;
     color: var(--text-color);
@@ -180,10 +278,8 @@ body {
 
 /* The technical layer: labels, frame numbers, metadata, the footer. */
 .mono {
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
     /* Stated rather than left to the element: on an <h2> this would inherit the
        browser's bold, and Plex Mono is loaded at 400 and 500 only - so the
        browser emboldened the 500 face synthetically, and the same label class
@@ -225,18 +321,15 @@ body {
 
 .site-name {
     display: block;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    font-size: 1.125rem;
+    line-height: 1.125rem;
+    font-weight: 400;
 }
 
 .site-role {
     display: block;
-    margin-top: 3px;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    margin-top: 4px;
+    font-size: 0.9375rem;
     color: var(--text-muted);
 }
 
@@ -248,11 +341,8 @@ body {
 }
 
 .site-nav a {
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    font-size: 1.125rem;
+    color: var(--text-color);
     text-decoration: none;
     transition: color 150ms;
 }
@@ -276,10 +366,8 @@ body {
     background: none;
     border: none;
     padding: 0;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    font-size: 1.125rem;
+    line-height: 1.125rem;
     color: var(--text-muted);
     cursor: pointer;
     transition: color 150ms;
@@ -347,16 +435,21 @@ body {
     }
 }
 
+/* The bar is in flow on every page now: the reference's header sits above its
+   masthead rather than over it, and with the masthead a flat band there is no
+   photograph for it to float on. The prop stays so the pages don't have to
+   change, it just stops doing anything. */
 .site-bar--over {
-    animation: rise 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    position: relative;
+    inset: auto;
+    z-index: auto;
 }
 
-/* A page with no backdrop image: the type carries it, so it sits higher and
-   doesn't reserve a viewport's height for nothing. */
-.hero--plain {
-    min-height: 0;
-    padding: clamp(72px, 12vh, 130px) var(--gutter) clamp(28px, 5vh, 48px);
-    background-color: var(--surface-color);
+/* An artist's own masthead: the same flat band, shorter, since their statement
+   is one line and the room is better spent on their work. Two classes so it
+   out-weighs .hero's own min-height. */
+.hero.hero--plain {
+    min-height: 360px;
 }
 
 .hero-statement {
@@ -371,86 +464,63 @@ body {
     margin-top: auto;
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 8px 24px;
-    /* The bottom padding clears the fixed ↑ Top button, which is pinned to the
-       viewport's bottom-right corner and paints over whatever is there - it was
-       covering the end of the copyright line on every page. Clearing it by
-       height rather than by width keeps the footer's last line intact however
-       the three spans wrap. */
-    padding: 22px var(--gutter) 60px;
-    border-top: var(--rule);
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+    /* The reference's footer is one centred line, not three columns pinned to
+       the edges, and it is 15px - larger than the technical layer it used to
+       share a size with. The bottom padding still clears the fixed ↑ Top
+       button, which paints over whatever is under it. */
+    padding: 40px var(--gutter) 56px;
+    font-size: 0.9375rem;
+    line-height: 1.125rem;
+    text-align: center;
+    color: var(--text-color);
 }
 
 .site-footer a {
     color: var(--text-color);
     text-decoration: none;
-    border-bottom: 1px solid var(--ink-500);
-    padding-bottom: 2px;
 }
 
 .site-footer a:hover {
-    border-bottom-color: var(--paper);
+    text-decoration: underline;
 }
 
 /* ==========================================================================
    Hero — the statement over the work
    ========================================================================== */
 .hero {
-    position: relative;
+    /* The reference's masthead: one flat near-black band, full content width but
+       inside the page gutter rather than bleeding past it, 540px on a 1440
+       window, with the statement centred in it. No photograph and no scrim - the
+       photographs come below, and a white page with one black band is the whole
+       idea. The colour is literal rather than a token, because it is the one
+       surface the reference keeps dark on a white site, in either theme. */
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    min-height: min(88vh, 880px);
-    padding: clamp(80px, 14vh, 160px) var(--gutter) clamp(24px, 5vh, 48px);
-    border-bottom: var(--rule);
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    min-height: 540px;
+    /* Inset by the gutter, not bleeding past it: the reference's dark band is a
+       1340px block inside 43px of white on each side, which is what makes it a
+       masthead rather than a full-bleed header image. */
+    margin: 0 var(--gutter);
+    padding: 64px 20px;
+    background-color: #111111;
     overflow: hidden;
 }
 
-/* Starts flat ink and fades in once the first frame has loaded, so the hero
-   never flashes a half-painted image. Desaturated: the photographs are the
-   only colour on the page. */
-.hero-media {
-    position: absolute;
-    inset: 0;
-    background-position: center;
-    background-size: cover;
-    filter: grayscale(1) contrast(1.06) brightness(0.5);
-    opacity: 0;
-    transition: opacity 900ms ease;
-}
-
-.hero-media.is-loaded {
-    opacity: 1;
-}
-
-/* Keeps the bar and the statement readable whatever the photograph behind them
-   is: dark at the top and bottom edges, clear through the middle. */
-.hero-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        rgba(8, 8, 10, 0.78) 0%,
-        rgba(8, 8, 10, 0.1) 34%,
-        rgba(8, 8, 10, 0.82) 100%
-    );
-    pointer-events: none;
-}
-
 .hero-statement {
-    position: relative;
-    max-width: 34ch;
-    font-size: clamp(1.75rem, 3.6vw, 3.25rem);
-    font-weight: 300;
-    line-height: 1.04;
-    letter-spacing: -0.03em;
+    max-width: 800px;
+    /* 37px over a 42px line, weight 400, white, centred: the reference's own
+       statement, measured. Not a token - see above. */
+    font-size: 2.3125rem;
+    line-height: 42px;
+    font-weight: 400;
+    color: #ffffff;
+    text-align: center;
     text-wrap: balance;
 }
 
@@ -458,27 +528,122 @@ body {
     position: relative;
     display: flex;
     flex-wrap: wrap;
-    gap: 14px clamp(20px, 4vw, 60px);
-    margin-top: clamp(24px, 6vh, 56px);
-    padding-top: 14px;
-    /* The type's colour at low alpha rather than a border colour: this row sits
-       on a photograph in the media hero and on the page itself in the plain
-       one, so it has to follow the type in both. */
-    border-top: 1px solid var(--rule-veil);
+    justify-content: center;
+    gap: 10px 32px;
+    color: rgba(255, 255, 255, 0.72);
 }
 
-.hero-meta dt {
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--ink-300);
+.hero-meta dt,
+.hero-meta dd {
+    display: inline;
+    font-size: 0.9375rem;
+    line-height: 1.125rem;
+    color: inherit;
 }
 
 .hero-meta dd {
     margin-top: 5px;
     font-family: var(--font-mono);
     font-size: 0.75rem;
+}
+
+/* ==========================================================================
+   Index — the albums, one tile each
+
+   The page you read to decide what to look at, so it is uniform where a sheet is
+   fitted: the same density on every visit, whatever the window. Full bleed and
+   hairline-gutted like the sheets, because the two are the same grid seen at two
+   scales, but the column count comes from the width alone - no fit solver, no
+   per-artist ceiling, no stretching. All of that belongs to the album behind the
+   click.
+   ========================================================================== */
+.index-grid {
+    display: grid;
+    /* Two columns, fixed, because that is the density the reference uses for
+       its archive and the artist has asked for two across everywhere. A fixed
+       count rather than a width-driven one is what keeps six albums in three
+       even rows instead of stranding one tile at five across. min(100%, ...)
+       lets a phone take one full-width tile instead of a track wider than it
+       is. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--gap);
+}
+
+@media (max-width: 700px) {
+    .index-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cover {
+    /* A stacking context, so the title can sit on the photograph. */
+    position: relative;
+    padding: 0;
+}
+
+.cover-open {
+    display: block;
+    padding: 0;
+    cursor: zoom-in;
+}
+
+.cover img {
+    display: block;
+    width: 100%;
+    /* 5:4, the reference's own cover: 663 wide over a 530 image area. A 3:2
+       crop here would sit the index and the album at two different shapes for
+       no reason the eye can defend. */
+    aspect-ratio: 5 / 4;
+    object-fit: cover;
+    background-color: var(--raised-color);
+    transition: opacity 150ms;
+}
+
+.cover-open:hover img {
+    opacity: 0.88;
+}
+
+.cover-meta {
+    /* The title sits on the photograph, centred - which is the reference's whole
+       trick, and what makes a cover a poster rather than a thumbnail with a
+       caption. The artist and frame count sit under it, smaller, so the tile
+       still says who made it. */
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    min-width: 0;
+    text-align: center;
+}
+
+.cover-title {
+    font-size: 2.25rem;
+    line-height: 40px;
+    font-weight: 500;
+    color: #ffffff;
+    text-decoration: none;
+    /* A long album title truncates rather than wrapping the caption to two
+       lines, which would make one tile's caption taller than the row's. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 1px 14px rgba(0, 0, 0, 0.4);
+}
+
+.cover-title:hover {
+    border-bottom: 1px solid var(--ink-500);
+}
+
+/* The artist and the frame count, held to the technical layer. */
+.cover-line {
+    flex: none;
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
 }
 
 /* ==========================================================================
@@ -504,9 +669,12 @@ body {
 
 .sheet-head h1,
 .sheet-head h2 {
-    font-size: clamp(1.125rem, 1.6vw, 1.375rem);
-    font-weight: 400;
-    letter-spacing: -0.01em;
+    /* The reference's project titles are 36px over a 40px line at weight 500 -
+       the largest thing on the page after the statement, which is what makes a
+       cover read as a poster. */
+    font-size: 2.25rem;
+    line-height: 40px;
+    font-weight: 500;
 }
 
 .sheet-actions {
@@ -520,8 +688,6 @@ body {
 .tier {
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--ink-300);
     border: var(--rule);
     padding: 5px 8px;
@@ -530,8 +696,6 @@ body {
 .tier-note {
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--text-muted);
 }
 
@@ -539,8 +703,6 @@ body {
     padding: 12px 0 20px;
     font-family: var(--font-mono);
     font-size: 0.6875rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
     color: var(--text-muted);
 }
 
@@ -573,10 +735,12 @@ body {
 .sheet-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1px;
-    margin-inline: calc(var(--gutter) * -1);
-    background-color: var(--border-color);
-    border: var(--rule);
+    /* 13px of the page showing between frames, not a hairline: on a white page
+       the reference separates photographs with real space, and butting them
+       with a rule is what made this read as a proof sheet instead. No breakout
+       and no drawn border either - the grid stays inside the page gutter like
+       every other element, and the gutter supplies the margin. */
+    gap: var(--gap);
 }
 
 /* The column count comes from lib/useFittedGrids, which reads the artist's
@@ -628,13 +792,13 @@ body {
 }
 
 .frame {
-    background-color: var(--bg-color);
+    /* 10px of air around the photograph, 0 at the bottom where the caption sits.
+       The reference's covers are bare, but the fit solver is calibrated against
+       this inset - it measures how much of a cell is not photograph and solves
+       the column count from that. Removing it made every ratio ~0.4 wider and a
+       four-frame album filled 1280 as a 2.48:1 letterbox, so the air is doing
+       work, not decorating. */
     padding: 10px 10px 0;
-    transition: background-color 150ms;
-}
-
-.frame:hover {
-    background-color: var(--ink-900);
 }
 
 /* One crop for every frame, the way a contact sheet presents a roll: the
@@ -678,7 +842,6 @@ body {
     flex: none;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.12em;
     color: var(--text-muted);
 }
 
@@ -725,8 +888,6 @@ body {
 .roster-line {
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--text-muted);
 }
 
@@ -740,8 +901,6 @@ body {
     padding: 0;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--ink-300);
     cursor: pointer;
     transition: color 150ms;
@@ -764,8 +923,6 @@ body {
     flex: none;
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--ink-500);
 }
 
@@ -805,7 +962,6 @@ body {
     font-size: clamp(1.0625rem, 1.5vw, 1.375rem);
     font-weight: 300;
     line-height: 1.45;
-    letter-spacing: -0.01em;
     text-wrap: pretty;
 }
 
@@ -898,8 +1054,6 @@ body {
     padding: 0;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--text-color);
     cursor: pointer;
 }
@@ -955,8 +1109,6 @@ body {
     padding: 11px 16px;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     cursor: pointer;
     transition: background-color 150ms;
 }
@@ -981,8 +1133,6 @@ body {
     padding: 10px 14px;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     cursor: pointer;
     opacity: 0;
     pointer-events: none;
@@ -1008,7 +1158,6 @@ body {
 .page-header h1 {
     font-size: 1.375rem;
     font-weight: 400;
-    letter-spacing: -0.01em;
 }
 
 .page-header p {
@@ -1020,8 +1169,6 @@ body {
 .header-link {
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--text-muted);
     text-decoration: none;
     transition: color 150ms;
@@ -1041,8 +1188,6 @@ body {
 .logout-link {
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--danger-color);
     text-decoration: none;
     transition: color 150ms;
@@ -1061,7 +1206,6 @@ body {
     padding: 0 4px;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.12em;
     color: var(--text-muted);
 }
 
@@ -1106,7 +1250,6 @@ body {
 .login-form h1 {
     font-size: 1.5rem;
     font-weight: 400;
-    letter-spacing: -0.02em;
 }
 
 .login-form > p {
@@ -1124,8 +1267,6 @@ body {
     display: block;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 8px;
 }
@@ -1188,8 +1329,6 @@ body {
     border: none;
     font-family: var(--font-mono);
     font-size: 0.6875rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     cursor: pointer;
     transition: background-color 150ms;
 }
@@ -1288,8 +1427,6 @@ body {
 .studio-saved {
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--text-muted);
 }
 
@@ -1335,8 +1472,6 @@ body {
     margin-top: 4px;
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     color: var(--text-muted);
 }
 
@@ -1355,8 +1490,6 @@ body {
     border: var(--rule);
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
 }
 
 .album-button {
@@ -1367,8 +1500,6 @@ body {
     color: var(--text-color);
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     cursor: pointer;
     transition: background-color 150ms;
 }
@@ -1432,8 +1563,6 @@ body {
     width: fit-content;
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     color: var(--text-muted);
     cursor: pointer;
 }
@@ -1497,8 +1626,6 @@ body {
     margin-top: 12px;
     font-family: var(--font-mono);
     font-size: 0.625rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--text-muted);
     cursor: pointer;
 }
@@ -1552,8 +1679,6 @@ body {
 .user-table th {
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--text-muted);
     font-weight: 400;
 }
@@ -1579,8 +1704,6 @@ body {
     color: var(--text-color);
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     cursor: pointer;
 }
 
@@ -1611,8 +1734,6 @@ body {
     color: var(--text-color);
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     cursor: pointer;
 }
 

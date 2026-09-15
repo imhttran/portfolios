@@ -28,6 +28,9 @@ class ArtistProfileInput(CamelModel):
     # Optional. An integer 2-8, or omitted to let the grid decide. Validated in
     # the route rather than here so the message reads like the others.
     grid_columns: int | None = None
+    # Optional, and one of "dark", "light", "paper". Blank means the artist has
+    # no theme of their own. Validated in the route for the same reason.
+    theme: str = ""
 
 
 class ArtistProfileOut(CamelModel):
@@ -41,4 +44,5 @@ class ArtistProfileOut(CamelModel):
     phone: str | None = None
     instagram: str | None = None
     grid_columns: int | None = None
+    theme: str | None = None
     updated_at: datetime

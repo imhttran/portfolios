@@ -23,15 +23,14 @@ import { useEffect, type RefCallback } from "react";
 const CROP = 2 / 3;
 
 // That crop as a ratio of width to height, and how far a stretched frame may sit
-// from it before it stops looking like a photograph: tighter than 1.1:1 is a
-// portrait slot holding a landscape sheet, wider than 2.5:1 is a letterbox strip
-// - which is what stops a tall window from squeezing a long album into slivers.
-// A sheet that cannot fill the window inside that band keeps the crop and runs
-// on - and an artist's ceiling can put an album below it, since two across on a
-// wide window is a deliberate choice, not something the fit may overrule.
+// from it before it stops looking like a photograph. The reference's own covers
+// are 5:4 (1.25) and its archive never stretches a photograph to fill a frame -
+// it is a uniform grid that scrolls. 1.9 is the widest a stretched frame may go
+// and still read as the photograph it is; past that it is a letterbox strip, and
+// the sheet keeps the crop and runs on instead.
 const TARGET_RATIO = 1 / CROP;
 const MIN_RATIO = 1.1;
-const MAX_RATIO = 2.5;
+const MAX_RATIO = 1.9;
 
 // A frame never gets narrower than this, so a column count that would take it
 // below this is not offered at all - which is what stops a narrow window from

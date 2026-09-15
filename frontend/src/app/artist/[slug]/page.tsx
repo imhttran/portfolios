@@ -1,13 +1,13 @@
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import { LOGIN_PATH } from "@/lib/api";
 import { SITE } from "@/lib/site";
-import { usePortfolio } from "@/lib/usePortfolio";
-import { AlbumSheet, SheetNote } from "@/components/AlbumSheet";
+import { useAlbumIndex } from "@/lib/usePortfolio";
+import { AlbumIndex } from "@/components/AlbumIndex";
+import { SheetNote } from "@/components/AlbumSheet";
 import { BackToTop } from "@/components/BackToTop";
 import { PageTitle } from "@/components/PageTitle";
-import { PhotoViewer } from "@/components/PhotoViewer";
 import { SiteBar } from "@/components/SiteBar";
 
 export default function ArtistPage({
@@ -18,12 +18,14 @@ export default function ArtistPage({
   // Next hands route params to a client page as a promise.
   const { slug } = use(params);
 
-  const { artist, sections, frames, failed, missing, loading, retry } =
-    usePortfolio(slug);
-  const [viewing, setViewing] = useState<number | null>(null);
+  const { artist, albums, failed, missing, loading, retry } =
+    useAlbumIndex(slug);
 
   return (
-    <div className="site">
+    // The artist's own theme, when they have one and the visitor hasn't chosen.
+    // It sits on this container rather than on <html> so it applies to their
+    // page alone, and so leaving the page removes it without any cleanup.
+    <div className="site" data-artist-theme={artist?.theme ?? undefined}>
       <PageTitle
         title={
           artist
@@ -63,8 +65,8 @@ export default function ArtistPage({
                 <dd>{artist.location}</dd>
               </div>
               <div>
-                <dt>Frames</dt>
-                <dd>{frames.length || "—"}</dd>
+                <dt>Albums</dt>
+                <dd>{albums?.length ?? "—"}</dd>
               </div>
               <div>
                 <dt>Contact</dt>
@@ -77,20 +79,11 @@ export default function ArtistPage({
             </dl>
           </section>
 
-          <main>
-            {sections.length === 0 ? (
-              <SheetNote>No albums are published yet.</SheetNote>
-            ) : (
-              sections.map(({ album, frames: albumFrames }) => (
-                <AlbumSheet
-                  key={album.id}
-                  album={album}
-                  frames={albumFrames}
-                  onOpen={setViewing}
-                />
-              ))
-            )}
-          </main>
+          {albums && albums.length > 0 ? (
+            <AlbumIndex albums={albums} />
+          ) : (
+            <SheetNote>No albums are published yet.</SheetNote>
+          )}
 
           <section className="about">
             <h2 className="mono">About</h2>
@@ -128,15 +121,6 @@ export default function ArtistPage({
           rights reserved.
         </span>
       </footer>
-
-      {viewing !== null ? (
-        <PhotoViewer
-          items={frames}
-          index={viewing}
-          onClose={() => setViewing(null)}
-          onIndexChange={setViewing}
-        />
-      ) : null}
 
       <BackToTop />
     </div>

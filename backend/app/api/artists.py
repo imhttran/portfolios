@@ -32,6 +32,9 @@ def _profile(row) -> dict:
         contact_email=row.contact_email,
         phone=row.phone,
         instagram=row.instagram,
+        # Not grid_columns: the sheet sizes itself from the album payload, which
+        # carries the ceiling per album. This is only the page's own look.
+        theme=row.theme,
         updated_at=row.updated_at,
     ).model_dump(by_alias=True, mode="json")
 
@@ -86,6 +89,7 @@ async def get_artist(
                 ArtistProfile.contact_email,
                 ArtistProfile.phone,
                 ArtistProfile.instagram,
+                ArtistProfile.theme,
                 ArtistProfile.updated_at,
             ).where(ArtistProfile.slug == slug)
         )

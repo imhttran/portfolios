@@ -116,6 +116,59 @@ async def test_unpublished_album_is_invisible_and_undownloadable(client):
         await _drop_album(album_id)
 
 
+async def test_an_album_carries_a_cover_for_the_index(client):
+    """The index shows one photograph per album: its first, by position.
+
+    Served on the album itself rather than left to the browser, because the
+    listing is an index - if it took a request per album to find a cover, the
+    index would cost a query per tile and the point of an index is that it is
+    cheap to scan.
+    """
+    _, artist_id = await _artist(client)
+    album_id, photo_id, slug = await _make_album(artist_id=artist_id, access=TIER_FREE)
+    try:
+        # A second photograph, later in the sequence, so "first" means something.
+        async with get_sessionmaker()() as session:
+            session.add(Photo(album_id=album_id, filename=f"{slug}/02.png", position=2))
+            await session.commit()
+
+        response, body = await do_json(client, "GET", "/api/media/albums")
+        assert response.status_code == 200
+        listed = next(a for a in body["albums"] if a["slug"] == slug)
+        assert listed["coverUrl"] == f"/api/media/photos/{photo_id}/file"
+
+        # The cover is a public preview, so an index renders without a session.
+        response = await client.get(listed["coverUrl"])
+        assert response.status_code == 200
+
+        # The album's own page gets the same cover, and its artist's theme, so
+        # it never needs a second request for the profile.
+        response, body = await do_json(client, "GET", f"/api/media/albums/{slug}")
+        assert response.status_code == 200
+        assert body["album"]["coverUrl"] == f"/api/media/photos/{photo_id}/file"
+        assert "artistTheme" in body["album"]
+    finally:
+        await _drop_album(album_id)
+
+
+async def test_an_empty_album_has_no_cover(client):
+    """Null rather than a broken image URL: an album with nothing imported yet
+    is a normal state, and the index tile falls back to a bare frame."""
+    _, artist_id = await _artist(client)
+    album_id, _, slug = await _make_album(artist_id=artist_id, access=TIER_FREE)
+    try:
+        async with get_sessionmaker()() as session:
+            await session.execute(delete(Photo).where(Photo.album_id == album_id))
+            await session.commit()
+
+        response, body = await do_json(client, "GET", f"/api/media/albums/{slug}")
+        assert response.status_code == 200
+        assert body["album"]["coverUrl"] is None
+        assert body["album"]["photoCount"] == 0
+    finally:
+        await _drop_album(album_id)
+
+
 async def test_free_album_downloads_for_any_registered_user(client):
     """No subscription, no relationship to the artist - just signed in."""
     artist_email, artist_id = await _artist(client)

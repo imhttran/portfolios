@@ -44,6 +44,11 @@ class ArtistProfile(Base):
     # portrait reads differently at two across than a wetland does at six. Null
     # leaves the whole decision to the grid.
     grid_columns: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Which theme this artist's own page wears: "dark", "light" or "paper".
+    # Null means the page follows the site, which is what a visitor sees before
+    # an artist picks one. Only their own page - the landing page and /gallery
+    # show every artist's work, so there is no single answer for them to give.
+    theme: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Whose profile the front page shows. Exactly one row should carry this;
     # the first artist to save a profile gets it.
     is_primary: Mapped[bool] = mapped_column(

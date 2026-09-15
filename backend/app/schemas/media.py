@@ -19,7 +19,14 @@ class AlbumSummary(CamelModel):
     # That artist's ceiling on how many photographs across this album's sheet
     # may get. Null means the grid decides on its own.
     artist_columns: int | None = None
+    # That artist's own theme, or null for none of their own. Carried here so an
+    # album's page can wear it without a second request for the profile.
+    artist_theme: str | None = None
     photo_count: int = 0
+    # What an index tile shows for this album: its first photograph by position,
+    # or null for an album with no photos yet. A path like ``download_url``, so
+    # the browser only has to prefix the API base.
+    cover_url: str | None = None
     # Computed per visitor, so the browser never has to re-implement the rule
     # and drift from the server.
     can_download: bool = False

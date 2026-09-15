@@ -178,11 +178,80 @@ async def test_the_grid_ceiling_round_trips_and_is_bounded(client):
         await cleanup(email)
 
 
-async def test_the_dev_seed_starts_the_two_artists_at_their_ceilings():
-    """Ethan at two across, Ted at four: what a database reset reproduces.
+async def test_the_page_theme_round_trips_and_is_whitelisted(client):
+    """The artist's own look: dark, light, paper, or none of their own."""
+    email, token = await _artist(client)
+    try:
+        # Omitted means the page follows the site, which is null, not "".
+        response, body = await do_json(
+            client, "PUT", "/api/artist/profile", token=token, json=VALID
+        )
+        assert response.status_code == 200, body
+        assert body["profile"]["theme"] is None
+
+        response, body = await do_json(
+            client,
+            "PUT",
+            "/api/artist/profile",
+            token=token,
+            json={**VALID, "theme": "paper"},
+        )
+        assert response.status_code == 200, body
+        assert body["profile"]["theme"] == "paper"
+
+        # The artist's own page is public, so the theme it renders in cannot sit
+        # behind a session either.
+        response, body = await do_json(
+            client, "GET", f"/api/artists/{body['profile']['slug']}"
+        )
+        assert response.status_code == 200
+        assert body["artist"]["theme"] == "paper"
+
+        # Case and padding are not the API's business.
+        response, body = await do_json(
+            client,
+            "PUT",
+            "/api/artist/profile",
+            token=token,
+            json={**VALID, "theme": "  LIGHT  "},
+        )
+        assert response.status_code == 200, body
+        assert body["profile"]["theme"] == "light"
+
+        # A value with no block of tokens behind it would leave the page
+        # unstyled, so the set is closed and everything else is refused. Padding
+        # is not a refusal: that is normalised away, as the case above shows.
+        for rejected in ("sepia", "hotdog", "darklight"):
+            response, body = await do_json(
+                client,
+                "PUT",
+                "/api/artist/profile",
+                token=token,
+                json={**VALID, "theme": rejected},
+            )
+            assert response.status_code == 400
+            assert body["message"] == "theme must be dark, light or paper, or omitted"
+
+        # And the artist can hand their page back to the site.
+        response, body = await do_json(
+            client,
+            "PUT",
+            "/api/artist/profile",
+            token=token,
+            json={**VALID, "theme": ""},
+        )
+        assert response.status_code == 200
+        assert body["profile"]["theme"] is None
+    finally:
+        await _drop_profile(email)
+        await cleanup(email)
+
+
+async def test_the_dev_seed_starts_both_artists_at_two_across():
+    """Two across for the whole site: what a database reset reproduces.
 
     The suite runs with env="", so the development seed has to be called
-    deliberately - which is also the only place these two numbers are pinned.
+    deliberately - which is also the only place this number is pinned.
     """
     settings = replace(get_settings(), env="development")
     sessionmaker = get_sessionmaker()
@@ -193,12 +262,22 @@ async def test_the_dev_seed_starts_the_two_artists_at_their_ceilings():
         async with sessionmaker() as session:
             rows = (
                 await session.execute(
-                    select(ArtistProfile.slug, ArtistProfile.grid_columns)
+                    select(
+                        ArtistProfile.slug,
+                        ArtistProfile.grid_columns,
+                        ArtistProfile.theme,
+                    )
                 )
             ).all()
-        assert {slug: columns for slug, columns in rows} == {
+        assert {slug: columns for slug, columns, _ in rows} == {
             "ethan-tran": 2,
-            "ted-nguy": 4,
+            "ted-nguy": 2,
+        }
+        # And neither wears a theme of their own, so the site reads as one page
+        # in its default white - the artist themes are opt-in in /studio.
+        assert {slug: theme for slug, _, theme in rows} == {
+            "ethan-tran": None,
+            "ted-nguy": None,
         }
     finally:
         await cleanup(DEV_ARTIST_EMAIL)

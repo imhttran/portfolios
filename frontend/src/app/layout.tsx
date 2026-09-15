@@ -34,25 +34,36 @@ export const metadata: Metadata = {
 // below it is, which is what keeps the page from painting one theme and then
 // the other.
 //
-// It always writes data-theme, even when nothing is stored. For a first-time
-// visitor the value it writes is the one color-scheme already resolved from the
-// system, so no repaint happens - while the attribute is also what tells the
-// switch it has something to switch, and a visitor with scripting off never
-// gets it and so never sees the switch.
+// It always writes data-theme, even when nothing is stored, and the value it
+// writes when nothing is stored is light - the site's own look, which is what a
+// first-time visitor gets in either theme and what a visitor with scripting off
+// gets too. The attribute is also what tells the switch it has something to
+// switch.
+//
+// data-theme-chosen is the narrower fact, and the only thing an artist's theme
+// defers to: it is written only when somebody actually picked, never when the
+// value merely fell out of the system preference. Without that distinction an
+// artist's page could not tell "I chose light" from "light happened to me",
+// and would have to override the one that was asked for.
 const THEME_SCRIPT = `
 (function () {
   var stored = null;
   try {
     stored = localStorage.getItem("theme");
   } catch {
-    /* Storage can be blocked; the system preference still applies. */
+    /* Storage can be blocked; the site still has to pick a look. */
   }
-  if (stored !== "light" && stored !== "dark") {
-    stored = window.matchMedia("(prefers-color-scheme: light)").matches
-      ? "light"
-      : "dark";
+  var chosen = stored === "light" || stored === "dark";
+  if (!chosen) {
+    /* Light is the site's own look, so that is the default rather than the
+       system preference: a dark-system visitor would otherwise land on a page
+       nothing like the one they asked for. */
+    stored = "light";
   }
   document.documentElement.dataset.theme = stored;
+  if (chosen) {
+    document.documentElement.dataset.themeChosen = "";
+  }
 })();
 `;
 

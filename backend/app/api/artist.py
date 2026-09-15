@@ -23,6 +23,19 @@ from app.services.validation import optional_trimmed, validate_email
 
 router = APIRouter(prefix="/api/artist", tags=["artist"])
 
+# The themes an artist may put their page in. A closed set, because each one is a
+# block of tokens in globals.css and a value with no block would leave the page
+# unstyled. "" is the fourth state - no theme of their own - and is normalised to
+# null on the way in.
+THEMES = ("dark", "light", "paper")
+
+
+def theme_of(body: ArtistProfileInput) -> str:
+    """The submitted theme, lowercased. One place, so validation and the save
+    can't disagree about what was actually asked for."""
+    return body.theme.strip().lower()
+
+
 _PROFILE_COLUMNS = (
     ArtistProfile.user_id,
     ArtistProfile.slug,
@@ -35,6 +48,7 @@ _PROFILE_COLUMNS = (
     ArtistProfile.phone,
     ArtistProfile.instagram,
     ArtistProfile.grid_columns,
+    ArtistProfile.theme,
     ArtistProfile.is_primary,
     ArtistProfile.updated_at,
 )
@@ -52,6 +66,7 @@ def _serialize(row) -> dict:
         phone=row.phone,
         instagram=row.instagram,
         grid_columns=row.grid_columns,
+        theme=row.theme,
         updated_at=row.updated_at,
     ).model_dump(by_alias=True, mode="json")
 
@@ -76,6 +91,8 @@ def _validate(body: ArtistProfileInput) -> str | None:
     # Past eight the frames are too small to be worth the ceiling.
     if body.grid_columns is not None and not 2 <= body.grid_columns <= 8:
         return "gridColumns must be between 2 and 8, or omitted"
+    if theme_of(body) not in ("", *THEMES):
+        return "theme must be dark, light or paper, or omitted"
     return None
 
 
@@ -147,6 +164,7 @@ async def save_my_profile(
         profile.phone = optional_trimmed(body.phone)
         profile.instagram = optional_trimmed(body.instagram)
         profile.grid_columns = body.grid_columns
+        profile.theme = theme_of(body) or None
 
         await db.commit()
         await db.refresh(profile)

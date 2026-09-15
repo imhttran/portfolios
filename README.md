@@ -81,12 +81,16 @@ and their own albums. Each gets a page at `/artist/<slug>` (derived from their
 display name when the profile is first saved, then left alone so links survive a
 rename).
 
-- `/` is the **front page**: every artist's published work, each sheet naming its
-  artist, with the roster of artists above the work. The primary artist's copy
+- `/` is the **front page**: the primary artist's statement and the roster of
+  artists, above an index of every published album. The primary artist's copy
   (statement, About, footer) gives the site its voice.
-- `/artist/<slug>` is one artist's own page — their words and their work.
-- `/gallery` is the **client area**: the whole catalogue, with tiers shown and
-  downloads offered.
+- `/artist/<slug>` is one artist's own page — their words, and an index of their
+  albums.
+- `/gallery` is the **client area**: the whole catalogue as an index, with each
+  album's tier shown.
+- `/album/<slug>` is **the only page that shows photographs**, and where an album
+  is downloaded. The index pages send you here rather than inlining every frame,
+  which is what keeps them readable.
 - Subscriptions are **per artist**, so a customer subscribing to one artist does
   not open another artist's paid work.
 

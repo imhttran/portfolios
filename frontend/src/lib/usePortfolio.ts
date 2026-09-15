@@ -4,10 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE, renewSessionFrom } from "./api";
 import { useFittedGrids } from "./useFittedGrids";
 
-// Everything the three portfolio pages need to show work: the site's whole
-// published library, or one artist's. Shared so the pages can't drift about how
-// an album is loaded, which fields it carries, or how a visitor's entitlement
-// is read - the three used to restate all of it.
+// Everything the portfolio pages need to show work.
+//
+// The site is an index of albums and, behind a click, the album itself - the
+// shape the design reference uses, and the only one where a page stays readable:
+// inlining every photograph of every album put /gallery at 29 screens. So there
+// are two loaders rather than one, and the split is what keeps an index page
+// from paying for photographs nothing on it shows.
 
 export type Artist = {
   slug: string;
@@ -19,6 +22,9 @@ export type Artist = {
   contactEmail: string;
   phone: string | null;
   instagram: string | null;
+  // "dark" | "light" | "paper", or null for no theme of their own - in which
+  // case their page follows the site's.
+  theme: string | null;
 };
 
 export type Album = {
@@ -35,7 +41,13 @@ export type Album = {
   // That artist's ceiling on how many photographs across the sheet may get.
   // Null means the grid decides on its own.
   artistColumns: number | null;
+  // "dark" | "light" | "paper", or null for none of their own. Carried on the
+  // album so its page can wear the artist's theme without a second request.
+  artistTheme: string | null;
   photoCount: number;
+  // What an index tile shows for this album: its first photograph. Null for an
+  // album with none imported yet.
+  coverUrl: string | null;
   canDownload: boolean;
   downloadUrl: string;
 };
@@ -49,57 +61,56 @@ export type Photo = {
   height: number | null;
 };
 
-// A photograph with its place in the page-wide sequence and whose work it is.
+// A photograph with its place in the album's sequence and whose work it is.
 export type Frame = Photo & { credit: string | null; index: number };
 
-export type AlbumSection = { album: Album; frames: Frame[] };
-
-type Loaded = { album: Album; photos: Photo[] };
-
 /**
- * One flat list for the viewer, and each frame keeps its position in it, so the
- * sequence continues across albums instead of restarting per section.
+ * Read ``auth_token`` and hand back the headers a portfolio request needs.
+ *
+ * These endpoints are public but answer differently for a signed-in visitor -
+ * canDownload is computed per caller - so the token has to go with the request,
+ * or a subscriber sees everything as locked.
  */
-function toSections(albums: Loaded[] | null): AlbumSection[] {
-  let offset = 0;
-  return (albums ?? []).map(({ album, photos }) => {
-    const start = offset;
-    offset += photos.length;
-    return {
-      album,
-      frames: photos.map((photo, i) => ({
-        ...photo,
-        credit: album.credit,
-        index: start + i,
-      })),
-    };
-  });
+function authHeaders(): { token: string | null; headers?: HeadersInit } {
+  const token = localStorage.getItem("auth_token");
+  return {
+    token,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  };
 }
 
+type IndexState = {
+  artist: Artist | null;
+  albums: Album[] | null;
+  signedIn: boolean;
+  failed: boolean;
+  missing: boolean;
+  attempt: number;
+};
+
+const EMPTY_INDEX: IndexState = {
+  artist: null,
+  albums: null,
+  signedIn: false,
+  failed: false,
+  missing: false,
+  attempt: 0,
+};
+
 /**
- * The published work at ``/api/media/albums``, or at ``/api/artists/<slug>``
- * when a slug is given - which also returns that artist's public copy.
+ * The published albums, and at ``/api/artists/<slug>`` that artist's public copy
+ * with them. No photographs: this is what an index page renders.
  */
-export function usePortfolio(artistSlug?: string) {
-  const [artist, setArtist] = useState<Artist | null>(null);
-  const [albums, setAlbums] = useState<Loaded[] | null>(null);
-  const [signedIn, setSignedIn] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const [missing, setMissing] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+export function useAlbumIndex(artistSlug?: string) {
+  const [state, setState] = useState<IndexState>(EMPTY_INDEX);
 
   useEffect(() => {
     let cancelled = false;
-    setFailed(false);
-    setMissing(false);
+    setState((s) => ({ ...s, failed: false, missing: false }));
 
     (async () => {
-      // These endpoints are public but answer differently for a signed-in
-      // visitor - canDownload is computed per caller - so the token has to go
-      // with the request, or a subscriber sees everything as locked.
-      const token = localStorage.getItem("auth_token");
-      setSignedIn(Boolean(token));
-      const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+      const { token, headers } = authHeaders();
+      setState((s) => ({ ...s, signedIn: Boolean(token) }));
 
       try {
         const response = await fetch(
@@ -109,7 +120,7 @@ export function usePortfolio(artistSlug?: string) {
           { headers },
         );
         if (response.status === 404) {
-          if (!cancelled) setMissing(true);
+          if (!cancelled) setState((s) => ({ ...s, missing: true }));
           return;
         }
         renewSessionFrom(response);
@@ -117,50 +128,118 @@ export function usePortfolio(artistSlug?: string) {
         if (!response.ok) throw new Error(data.message);
         if (cancelled) return;
 
-        if (artistSlug) setArtist(data.artist as Artist);
-
-        // One detail request per album: small at this size, and it keeps the
-        // listing endpoint from inlining every photo in the library.
-        const loaded = await Promise.all(
-          (data.albums as Album[]).map(async (stub) => {
-            const detail = await fetch(
-              `${API_BASE}/api/media/albums/${stub.slug}`,
-              { headers },
-            );
-            renewSessionFrom(detail);
-            const body = await detail.json();
-            if (!detail.ok) throw new Error(body.message);
-            return {
-              album: body.album as Album,
-              photos: body.photos as Photo[],
-            };
-          }),
-        );
-        if (!cancelled) setAlbums(loaded);
+        setState((s) => ({
+          ...s,
+          artist: artistSlug ? (data.artist as Artist) : null,
+          albums: data.albums as Album[],
+        }));
       } catch {
-        if (!cancelled) setFailed(true);
+        if (!cancelled) setState((s) => ({ ...s, failed: true }));
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [artistSlug, attempt]);
-
-  const sections = useMemo(() => toSections(albums), [albums]);
-  const frames = useMemo(() => sections.flatMap((s) => s.frames), [sections]);
-
-  // Size every album to the frame it is shown in.
-  useFittedGrids(albums);
+  }, [artistSlug, state.attempt]);
 
   return {
-    artist,
-    sections,
+    artist: state.artist,
+    albums: state.albums,
+    signedIn: state.signedIn,
+    failed: state.failed,
+    missing: state.missing,
+    loading: state.albums === null && !state.failed && !state.missing,
+    retry: useCallback(
+      () => setState((s) => ({ ...s, attempt: s.attempt + 1 })),
+      [],
+    ),
+  };
+}
+
+type AlbumState = {
+  album: Album | null;
+  photos: Photo[] | null;
+  failed: boolean;
+  missing: boolean;
+  attempt: number;
+};
+
+const EMPTY_ALBUM: AlbumState = {
+  album: null,
+  photos: null,
+  failed: false,
+  missing: false,
+  attempt: 0,
+};
+
+/**
+ * One album with its photographs, in order, for the album's own page.
+ *
+ * Its own request rather than the index's: an index should never pay to load the
+ * frames of every album it lists, and this one only ever pays for one.
+ */
+export function useAlbum(slug: string) {
+  const [state, setState] = useState<AlbumState>(EMPTY_ALBUM);
+
+  useEffect(() => {
+    let cancelled = false;
+    setState((s) => ({ ...s, failed: false, missing: false }));
+
+    (async () => {
+      const { headers } = authHeaders();
+      try {
+        const response = await fetch(`${API_BASE}/api/media/albums/${slug}`, {
+          headers,
+        });
+        if (response.status === 404) {
+          if (!cancelled) setState((s) => ({ ...s, missing: true }));
+          return;
+        }
+        renewSessionFrom(response);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        if (cancelled) return;
+
+        setState((s) => ({
+          ...s,
+          album: data.album as Album,
+          photos: data.photos as Photo[],
+        }));
+      } catch {
+        if (!cancelled) setState((s) => ({ ...s, failed: true }));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, state.attempt]);
+
+  // The album's photographs as a page-wide sequence: the viewer walks this, and
+  // each frame keeps its position in it so the numbering matches the sheet.
+  const frames: Frame[] = useMemo(
+    () =>
+      (state.photos ?? []).map((photo, index) => ({
+        ...photo,
+        credit: state.album?.credit ?? null,
+        index,
+      })),
+    [state.photos, state.album],
+  );
+
+  // Size the album to the frame it is shown in.
+  useFittedGrids(state.album);
+
+  return {
+    album: state.album,
     frames,
-    signedIn,
-    failed,
-    missing,
-    loading: albums === null && !failed && !missing,
-    retry: useCallback(() => setAttempt((n) => n + 1), []),
+    failed: state.failed,
+    missing: state.missing,
+    loading: state.album === null && !state.failed && !state.missing,
+    retry: useCallback(
+      () => setState((s) => ({ ...s, attempt: s.attempt + 1 })),
+      [],
+    ),
   };
 }

@@ -52,6 +52,9 @@ _ARTIST_COLUMNS = (
     # Carried on the album rather than looked up separately, because the grid
     # sizes itself per album and that is the only place it is needed.
     ArtistProfile.grid_columns.label("artist_columns"),
+    # Same argument one step further: an album's own page wears its artist's
+    # theme, and that page reads only this endpoint.
+    ArtistProfile.theme.label("artist_theme"),
 )
 _PHOTO_COLUMNS = (
     Photo.id,
@@ -71,8 +74,29 @@ def _photo_count():
     )
 
 
+def _cover_photo_id():
+    """The album's first photograph by position - one for the index tile.
+
+    Correlated for the same reason as the count: the listing is an index of
+    albums and must not become a query per album. Position first, then id, so an
+    album whose rows were never numbered still gets a stable cover.
+    """
+    return (
+        select(Photo.id)
+        .where(Photo.album_id == Album.id)
+        .order_by(Photo.position, Photo.id)
+        .limit(1)
+        .scalar_subquery()
+    )
+
+
 def _album_columns_with_count():
-    return (*_ALBUM_COLUMNS, *_ARTIST_COLUMNS, _photo_count().label("photo_count"))
+    return (
+        *_ALBUM_COLUMNS,
+        *_ARTIST_COLUMNS,
+        _photo_count().label("photo_count"),
+        _cover_photo_id().label("cover_photo_id"),
+    )
 
 
 def _with_artist(stmt):
@@ -98,7 +122,13 @@ def _album(row, can_download: bool) -> dict:
         artist_name=row.artist_name,
         artist_slug=row.artist_slug,
         artist_columns=row.artist_columns,
+        artist_theme=row.artist_theme,
         photo_count=row.photo_count,
+        cover_url=(
+            f"/api/media/photos/{row.cover_photo_id}/file"
+            if row.cover_photo_id is not None
+            else None
+        ),
         can_download=can_download,
         download_url=f"/api/media/albums/{row.slug}/download",
     ).model_dump(by_alias=True, mode="json")

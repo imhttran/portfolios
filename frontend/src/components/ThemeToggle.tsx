@@ -11,7 +11,9 @@
 // where it would have nothing to switch.
 //
 // The choice is kept in localStorage, so it outlives the tab. The script treats
-// a stored value as final and falls back to the system preference otherwise.
+// a stored value as final and falls back to the system preference otherwise - and
+// marks the former, because an artist's theme has to yield to a real choice and
+// not to whatever the system happened to resolve to.
 export function ThemeToggle() {
   return (
     <button
@@ -25,6 +27,9 @@ export function ThemeToggle() {
         // default, so a missing attribute can't leave the page unstyled.
         const next = root.dataset.theme === "light" ? "dark" : "light";
         root.dataset.theme = next;
+        // Marks this as a choice rather than a system preference, which is what
+        // lets it outrank the artist's own theme on their page.
+        root.dataset.themeChosen = "";
         localStorage.setItem("theme", next);
       }}
     >
