@@ -15,7 +15,7 @@ export const SITE = {
     "Most of these were made without asking anyone to hold still. Nothing here is arranged.",
   // The About band on the landing page. Two or three sentences, in your voice.
   bio: "Placeholder. Say who you are, what you shoot, and who you shoot it for.",
-  email: "you@example.com",
+  email: "tom.tran@email.com",
   // Optional: blank values are left out of the footer rather than shown empty.
   phone: "",
   instagram: "",

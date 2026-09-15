@@ -117,7 +117,7 @@ _DEV_PROFILE = {
     ),
     "bio": "Placeholder. Say who you are, what you make, and who you make it for.",
     "location": "Austin, TX",
-    "contact_email": "you@example.com",
+    "contact_email": "tom.tran@email.com",
 }
 
 
