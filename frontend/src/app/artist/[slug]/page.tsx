@@ -8,6 +8,7 @@ import { BackToTop } from "@/components/BackToTop";
 import { PageTitle } from "@/components/PageTitle";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { SignOut } from "@/components/SignOut";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Artist = {
   slug: string;
@@ -134,6 +135,7 @@ export default function ArtistPage({
         <nav className="site-nav">
           <a href="/#artists">All artists</a>
           <a href="/gallery">Client access</a>
+          <ThemeToggle />
           <SignOut />
         </nav>
       </header>

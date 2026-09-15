@@ -57,6 +57,9 @@
   so the API can't be used to probe registered emails
 - **Server-side proxy** — the browser only talks to Next.js; `/api/*` is
   forwarded to the FastAPI backend, so it's never exposed directly
-- **Theming** — a single dark monochrome editorial theme (ink/paper, no accent
-  colour), with mono type reserved for the technical layer: frame numbers,
-  credits, the footer
+- **Theming** — a monochrome editorial palette (ink/paper, no accent colour)
+  in both a dark and a light theme, switched from the header, remembered per
+  browser, and defaulting to the system preference. Mono type is reserved for
+  the technical layer: frame numbers, credits, the footer. The hero over a
+  photograph, and the viewer, stay dark in either theme, because there the scrim
+  behind the type sets the contrast rather than the page

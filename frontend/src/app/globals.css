@@ -1,10 +1,15 @@
 /* ==========================================================================
    Design tokens
 
-   Monochrome, single theme. The reference is a near-black page with white type
-   and no accent colour, so there is deliberately no brand hue here: the only
-   colours that carry meaning are the paper/ink pair and a muted red reserved
-   for destructive actions.
+   Monochrome, and still no accent colour: the only colours that carry meaning
+   here are the ink/paper pair and a muted red reserved for destructive
+   actions.
+
+   Ink and paper name roles rather than colours. --ink-950 is always the page
+   and --paper is always the type, so in light mode the two trade places: the
+   page becomes the paper and the type becomes the ink. The values below are
+   the dark theme, and the theme block further down re-expresses the same
+   tokens as light-dark().
    ========================================================================== */
 :root {
     color-scheme: dark;
@@ -38,6 +43,10 @@
     --danger-color: #c4564e;
     --danger-hover: #d96b62;
     --focus-ring: rgba(241, 240, 236, 0.24);
+    /* A rule drawn in the type's colour instead of the border's, for hairlines
+       that sit on a photograph - where a border colour would be describing a
+       surface that isn't there. */
+    --rule-veil: rgba(241, 240, 236, 0.28);
     --card-shadow: none;
 
     /* Page rhythm */
@@ -47,6 +56,87 @@
     --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
     --font-mono:
         var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+/* ==========================================================================
+   Themes
+
+   A second pass over the same tokens, this time as light-dark(), which
+   resolves against each element's own color-scheme. Light mode is then a
+   color-scheme away: [data-theme] pins it for the whole document, and the
+   islands below pin it back where a photograph, not the page, decides the
+   contrast.
+
+   All of it sits behind the support query, so a browser that predates
+   light-dark() keeps the token block above unchanged - the dark theme, exactly
+   as it was - instead of getting a half-applied one. That is also why the
+   switch stays hidden there: nothing below runs, so it would have nothing to
+   switch.
+
+   With no choice stored the first rule follows the system preference, which is
+   what a visitor with scripting off gets too.
+   ========================================================================== */
+@supports (color: light-dark(#000, #fff)) {
+    :root {
+        color-scheme: light dark;
+
+        /* The paper, the surfaces stained into it, then the hairlines. */
+        --ink-950: light-dark(#f1f0ec, #08080a);
+        --ink-900: light-dark(#eae8e3, #101013);
+        --ink-800: light-dark(#e0ded8, #17171b);
+        --ink-700: light-dark(#d5d3cb, #26262c);
+
+        /* The three text steps. Each lands within a fifth of a stop of its
+           dark value against the page it renders on, so light mode reads as
+           the same design rather than a second one: type 17.1:1, muted 5.8,
+           soft 8.4, quiet 4.7, hairlines 1.3. */
+        --ink-500: light-dark(#6a6a72, #6b6b73);
+        --ink-400: light-dark(#5c5c63, #8d8d95);
+        --ink-300: light-dark(#45454b, #b3b3ba);
+        --paper: light-dark(#0c0c0e, #f1f0ec);
+        --paper-dim: light-dark(#b9b7b0, #cac9c3);
+
+        /* Paper on ink becomes ink on paper, so this hover has to travel the
+           other way: brighter than the fill it sits on is only correct when
+           the fill is the dark one. */
+        --primary-hover: light-dark(#2c2c30, #ffffff);
+        --danger-color: light-dark(#a3372f, #c4564e);
+        --danger-hover: light-dark(#8d2c25, #d96b62);
+        --focus-ring: light-dark(
+            rgba(12, 12, 14, 0.24),
+            rgba(241, 240, 236, 0.24)
+        );
+        --rule-veil: light-dark(
+            rgba(12, 12, 14, 0.28),
+            rgba(241, 240, 236, 0.28)
+        );
+    }
+
+    /* An explicit choice, which is what the switch writes. */
+    :root[data-theme="dark"] {
+        color-scheme: dark;
+    }
+
+    :root[data-theme="light"] {
+        color-scheme: light;
+    }
+}
+
+/* Dark whatever the theme, because here the photograph behind the type sets
+   the contrast, not the page: the hero with a frame in it, the bar floating
+   over that hero, and the viewer. color-scheme is inherited, so every token
+   used inside them resolves to its dark value - the alternative is restating
+   those values, which is the same thing with somewhere for it to drift apart.
+
+   color is restated for the same reason, one step along: it inherits from
+   body as an already-computed value, so without this the type here keeps the
+   page's colour while everything drawn from a token turns dark. The statement
+   over the hero was the visible symptom - near-black type on a black scrim. */
+.hero:has(.hero-scrim),
+.site-bar--over:has(+ .hero .hero-scrim),
+.viewer {
+    color-scheme: dark;
+    color: var(--text-color);
 }
 
 * {
@@ -159,6 +249,59 @@ body {
 
 .site-nav a:hover {
     color: var(--text-color);
+}
+
+/* ==========================================================================
+   Theme switch
+
+   Styled to read as one more item in whichever row of links it lands in - the
+   site nav and the account headers - so it carries the same mono label as the
+   links beside it.
+   ========================================================================== */
+.theme-toggle {
+    /* Hidden until something has resolved a theme: the pre-paint script sets
+       [data-theme], and with scripting off it never arrives. Offering a
+       control that switches nothing would be the worse of the two. */
+    display: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 150ms;
+}
+
+.theme-toggle:hover {
+    color: var(--text-color);
+}
+
+/* Both which label shows and whether the control shows at all depend on the
+   theme, and a second theme only exists where light-dark() does - so this is
+   the same gate the tokens use, rather than a second one to keep in step. */
+@supports (color: light-dark(#000, #fff)) {
+    :root[data-theme] .theme-toggle {
+        display: block;
+    }
+
+    .theme-toggle-to-dark {
+        display: none;
+    }
+
+    /* One name per destination, chosen in CSS rather than in React: the script
+       has already run by the time anything is painted, so the label is right
+       in the first frame. Reading the theme in the component instead would
+       mean the server and the first client render disagree. */
+    :root[data-theme="light"] .theme-toggle-to-light {
+        display: none;
+    }
+
+    :root[data-theme="light"] .theme-toggle-to-dark {
+        display: block;
+    }
 }
 
 /* On a narrow screen the identity takes the first row and the nav drops below
@@ -303,7 +446,10 @@ body {
     gap: 14px clamp(20px, 4vw, 60px);
     margin-top: clamp(24px, 6vh, 56px);
     padding-top: 14px;
-    border-top: 1px solid rgba(241, 240, 236, 0.28);
+    /* The type's colour at low alpha rather than a border colour: this row sits
+       on a photograph in the media hero and on the page itself in the plain
+       one, so it has to follow the type in both. */
+    border-top: 1px solid var(--rule-veil);
 }
 
 .hero-meta dt {

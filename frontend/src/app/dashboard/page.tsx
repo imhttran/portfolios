@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageFooter } from "@/components/PageFooter";
 import { PageTitle } from "@/components/PageTitle";
 import { SignOut } from "@/components/SignOut";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const USERS_PER_PAGE = 10;
 
@@ -304,6 +305,7 @@ export default function DashboardPage() {
           <a className="header-link" href="/gallery">
             Gallery
           </a>
+          <ThemeToggle />
           <SignOut className="logout-link" />
         </span>
       </PageHeader>

@@ -8,6 +8,7 @@ import { fitGrid, useFittedGrids } from "@/lib/useFittedGrids";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { PageTitle } from "@/components/PageTitle";
 import { SignOut } from "@/components/SignOut";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Album = {
   id: number;
@@ -180,6 +181,7 @@ export default function GalleryPage() {
           ) : (
             <a href={LOGIN_PATH}>Sign in</a>
           )}
+          <ThemeToggle />
           <SignOut />
         </nav>
       </header>

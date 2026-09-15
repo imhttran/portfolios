@@ -7,6 +7,7 @@ import { hasRole } from "@/lib/roles";
 import { AlbumManager } from "@/components/AlbumManager";
 import { PageTitle } from "@/components/PageTitle";
 import { SignOut } from "@/components/SignOut";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Profile = {
   displayName: string;
@@ -170,6 +171,7 @@ export default function StudioPage() {
           <a className="header-link" href="/dashboard">
             Dashboard
           </a>
+          <ThemeToggle />
           <SignOut className="header-link" />
         </span>
       </header>

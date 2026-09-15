@@ -9,6 +9,7 @@ import { BackToTop } from "@/components/BackToTop";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { PageTitle } from "@/components/PageTitle";
 import { SignOut } from "@/components/SignOut";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Album = {
   id: number;
@@ -155,6 +156,7 @@ export default function PortfolioPage() {
           <a href="#about">About</a>
           {roster.length > 1 ? <a href="#artists">Artists</a> : null}
           <a href="/gallery">Client access</a>
+          <ThemeToggle />
           <SignOut />
         </nav>
       </header>
