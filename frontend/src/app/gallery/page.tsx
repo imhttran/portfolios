@@ -5,6 +5,7 @@ import { useSiteCopy } from "@/lib/useSiteCopy";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
+import { EmailLink } from "@/components/EmailLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
 
@@ -62,7 +63,7 @@ export default function GalleryPage() {
           {copy.name} — {copy.role}
         </span>
         <span>
-          <a href={`mailto:${copy.email}`}>{copy.email}</a>
+          <EmailLink address={copy.email} name={copy.name} />
         </span>
         <span>
           © {new Date().getFullYear()} {copy.name}

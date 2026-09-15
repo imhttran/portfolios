@@ -7,6 +7,7 @@ import { useAlbum, type Frame } from "@/lib/usePortfolio";
 import { useDownload } from "@/lib/useDownload";
 import { AlbumSheet, SheetNote } from "@/components/AlbumSheet";
 import { BackToTop } from "@/components/BackToTop";
+import { EmailLink } from "@/components/EmailLink";
 import { PageTitle } from "@/components/PageTitle";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { SiteBar } from "@/components/SiteBar";
@@ -125,7 +126,10 @@ export default function AlbumPage({
           {album?.artistName ?? SITE.name} — {album?.credit ?? SITE.role}
         </span>
         <span>
-          <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+          <EmailLink
+            address={SITE.email}
+            name={album?.artistName ?? SITE.name}
+          />
           {" · "}
           <a href={LOGIN_PATH}>Sign in</a>
         </span>

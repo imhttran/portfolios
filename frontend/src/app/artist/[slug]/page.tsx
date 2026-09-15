@@ -7,6 +7,7 @@ import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { BackToTop } from "@/components/BackToTop";
+import { EmailLink } from "@/components/EmailLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
 
@@ -71,9 +72,10 @@ export default function ArtistPage({
               <div>
                 <dt>Contact</dt>
                 <dd>
-                  <a href={`mailto:${artist.contactEmail}`}>
-                    {artist.contactEmail}
-                  </a>
+                  <EmailLink
+                    address={artist.contactEmail}
+                    name={artist.displayName}
+                  />
                 </dd>
               </div>
             </dl>
@@ -91,9 +93,10 @@ export default function ArtistPage({
               <p className="about-bio">{artist.bio}</p>
               <p className="about-line">
                 Available for assignments —{" "}
-                <a href={`mailto:${artist.contactEmail}`}>
-                  {artist.contactEmail}
-                </a>
+                <EmailLink
+                  address={artist.contactEmail}
+                  name={artist.displayName}
+                />
                 {artist.phone ? <> · {artist.phone}</> : null}
               </p>
             </div>
@@ -106,9 +109,10 @@ export default function ArtistPage({
           {artist?.displayName ?? SITE.name} — {artist?.tagline ?? SITE.role}
         </span>
         <span>
-          <a href={`mailto:${artist?.contactEmail ?? SITE.email}`}>
-            {artist?.contactEmail ?? SITE.email}
-          </a>
+          <EmailLink
+            address={artist?.contactEmail ?? SITE.email}
+            name={artist?.displayName ?? SITE.name}
+          />
           {artist?.instagram ? <> · {artist.instagram}</> : null}
           {" · "}
           <a href={LOGIN_PATH}>Sign in</a>

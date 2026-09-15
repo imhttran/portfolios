@@ -6,6 +6,7 @@ import { useSiteCopy } from "@/lib/useSiteCopy";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
+import { EmailLink } from "@/components/EmailLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
 
@@ -80,7 +81,7 @@ export default function PortfolioPage() {
           <div>
             <dt>Contact</dt>
             <dd>
-              <a href={`mailto:${copy.email}`}>{copy.email}</a>
+              <EmailLink address={copy.email} name={copy.name} />
             </dd>
           </div>
         </dl>
@@ -132,7 +133,7 @@ export default function PortfolioPage() {
           <p className="about-bio">{copy.bio}</p>
           <p className="about-line">
             Available for assignments —{" "}
-            <a href={`mailto:${copy.email}`}>{copy.email}</a>
+            <EmailLink address={copy.email} name={copy.name} />
             {copy.phone ? <> · {copy.phone}</> : null}
           </p>
         </div>
@@ -143,7 +144,7 @@ export default function PortfolioPage() {
           {copy.name} — {copy.role}
         </span>
         <span>
-          <a href={`mailto:${copy.email}`}>{copy.email}</a>
+          <EmailLink address={copy.email} name={copy.name} />
           {copy.instagram ? <> · {copy.instagram}</> : null}
         </span>
         <span>
