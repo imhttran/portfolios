@@ -19,7 +19,11 @@ from app.db.session import get_db
 from app.models import ArtistProfile
 from app.schemas.artist import ArtistProfileInput, ArtistProfileOut
 from app.services.slugs import unique_artist_slug
-from app.services.validation import optional_trimmed, validate_email
+from app.services.validation import (
+    optional_trimmed,
+    validate_email,
+    validate_instagram,
+)
 
 router = APIRouter(prefix="/api/artist", tags=["artist"])
 
@@ -34,6 +38,13 @@ def theme_of(body: ArtistProfileInput) -> str:
     """The submitted theme, lowercased. One place, so validation and the save
     can't disagree about what was actually asked for."""
     return body.theme.strip().lower()
+
+
+def instagram_of(body: ArtistProfileInput) -> str | None:
+    """The submitted handle, stripped of a leading @, or None. One place, for
+    the same reason: validation and the save must agree on the shape."""
+    trimmed = body.instagram.strip().lstrip("@")
+    return trimmed or None
 
 
 _PROFILE_COLUMNS = (
@@ -93,6 +104,15 @@ def _validate(body: ArtistProfileInput) -> str | None:
         return "gridColumns must be between 2 and 8, or omitted"
     if theme_of(body) not in ("", *THEMES):
         return "theme must be dark, light or paper, or omitted"
+    # The handle is what builds the profile URL the glyph links to, so it has to
+    # be one. A leading @ is allowed and stripped, because that is how people
+    # write handles everywhere else.
+    handle = instagram_of(body)
+    if handle is not None and not validate_instagram(handle):
+        return (
+            "Instagram must be a handle - letters, numbers, dots or "
+            "underscores, up to 30 characters, or omitted"
+        )
     return None
 
 
@@ -162,7 +182,7 @@ async def save_my_profile(
         profile.location = body.location.strip()
         profile.contact_email = body.contact_email.strip()
         profile.phone = optional_trimmed(body.phone)
-        profile.instagram = optional_trimmed(body.instagram)
+        profile.instagram = instagram_of(body)
         profile.grid_columns = body.grid_columns
         profile.theme = theme_of(body) or None
 

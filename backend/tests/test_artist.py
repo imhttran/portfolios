@@ -247,6 +247,53 @@ async def test_the_page_theme_round_trips_and_is_whitelisted(client):
         await cleanup(email)
 
 
+async def test_the_instagram_handle_is_a_handle(client):
+    """The glyph builds its profile URL from this value, so it has to be one."""
+    email, token = await _artist(client)
+    try:
+        # Omitted stays null, and a leading @ is accepted and stripped, because
+        # that is how people write handles everywhere else.
+        for submitted, stored in (("", None), ("@ethan.uncurated", "ethan.uncurated")):
+            response, body = await do_json(
+                client,
+                "PUT",
+                "/api/artist/profile",
+                token=token,
+                json={**VALID, "instagram": submitted},
+            )
+            assert response.status_code == 200, body
+            assert body["profile"]["instagram"] == stored
+
+        # The public read serves it: the glyph is on a page with no session.
+        response, body = await do_json(client, "GET", "/api/artist/profile")
+        assert response.status_code == 200
+        assert body["profile"]["instagram"] == "ethan.uncurated"
+
+        # Everything that isn't a handle is refused, whatever the intent - a
+        # space, a hyphen, a full URL, or one longer than the platform allows.
+        for rejected in (
+            "ted nguy",
+            "ted-nguy",
+            "https://instagram.com/tednguy",
+            "a" * 31,
+        ):
+            response, body = await do_json(
+                client,
+                "PUT",
+                "/api/artist/profile",
+                token=token,
+                json={**VALID, "instagram": rejected},
+            )
+            assert response.status_code == 400
+            assert body["message"] == (
+                "Instagram must be a handle - letters, numbers, dots or "
+                "underscores, up to 30 characters, or omitted"
+            )
+    finally:
+        await _drop_profile(email)
+        await cleanup(email)
+
+
 async def test_the_dev_seed_starts_both_artists_at_two_across():
     """Two across for the whole site: what a database reset reproduces.
 

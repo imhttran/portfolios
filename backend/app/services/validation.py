@@ -10,9 +10,19 @@ _EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 _SPECIAL_RE = re.compile(r"""[!@#$%^&*(),.?":{}|<>]""")
 
+# An Instagram handle: letters, digits, dots and underscores, up to 30 - the
+# shape the platform itself allows. One place, because the handle is what builds
+# the profile URL the glyph links to, and a stray character there is a link that
+# quietly doesn't work.
+_INSTAGRAM_RE = re.compile(r"^[A-Za-z0-9._]{1,30}$")
+
 
 def validate_email(email: str) -> bool:
     return _EMAIL_RE.match(email) is not None
+
+
+def validate_instagram(handle: str) -> bool:
+    return _INSTAGRAM_RE.match(handle) is not None
 
 
 def validate_password(password: str) -> str | None:
