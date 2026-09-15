@@ -635,6 +635,16 @@ body {
     opacity: 0.88;
 }
 
+/* An album with no photographs yet: the tile keeps the cover's shape and holds
+   a quiet block, rather than requesting an image that isn't there. Same shape
+   and same colour as a frame with nothing in it. */
+.cover-frame {
+    display: block;
+    width: 100%;
+    aspect-ratio: 5 / 4;
+    background-color: var(--raised-color);
+}
+
 .cover-meta {
     /* The title sits on the photograph, centred - which is the reference's whole
        trick, and what makes a cover a poster rather than a thumbnail with a

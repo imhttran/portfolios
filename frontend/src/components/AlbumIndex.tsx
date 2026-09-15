@@ -44,7 +44,15 @@ export function AlbumIndex({
             >
               {/* Plain <img>: same-origin /api paths proxied by this server. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${API_BASE}${album.coverUrl}`} alt="" loading="lazy" />
+              {album.coverUrl ? (
+                <img
+                  src={`${API_BASE}${album.coverUrl}`}
+                  alt=""
+                  loading="lazy"
+                />
+              ) : (
+                <span className="cover-frame" />
+              )}
             </a>
             <figcaption className="cover-meta">
               <a className="cover-title" href={`/album/${album.slug}`}>
