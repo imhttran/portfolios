@@ -491,24 +491,21 @@ body {
    Hero — the statement over the work
    ========================================================================== */
 .hero {
-    /* The reference's masthead: one flat near-black band, full content width but
-       inside the page gutter rather than bleeding past it, 540px on a 1440
-       window, with the statement centred in it. No photograph and no scrim - the
-       photographs come below, and a white page with one black band is the whole
-       idea. The colour is literal rather than a token, because it is the one
-       surface the reference keeps dark on a white site, in either theme. */
+    /* The masthead: the statement, centred, in a 540px block on a 1440 window,
+       inside the page gutter rather than bleeding past it. No photograph and no
+       scrim - the photographs come below.
+
+       No background of its own, so it sits on the page's colour and reads as
+       part of it: the reference's band is what made a light page look like it
+       had a dark block bolted on top. */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 40px;
     min-height: 540px;
-    /* Inset by the gutter, not bleeding past it: the reference's dark band is a
-       1340px block inside 43px of white on each side, which is what makes it a
-       masthead rather than a full-bleed header image. */
     margin: 0 var(--gutter);
     padding: 64px 20px;
-    background-color: var(--ink-800);
     overflow: hidden;
 }
 
