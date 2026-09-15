@@ -364,7 +364,12 @@ body {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px 24px;
-    padding: 22px var(--gutter) 28px;
+    /* The bottom padding clears the fixed ↑ Top button, which is pinned to the
+       viewport's bottom-right corner and paints over whatever is there - it was
+       covering the end of the copyright line on every page. Clearing it by
+       height rather than by width keeps the footer's last line intact however
+       the three spans wrap. */
+    padding: 22px var(--gutter) 60px;
     border-top: var(--rule);
     font-family: var(--font-mono);
     font-size: 0.625rem;

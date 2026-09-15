@@ -254,7 +254,11 @@ export default function ArtistPage({
           <a href={LOGIN_PATH}>Sign in</a>
         </span>
         <span>
-          © {new Date().getFullYear()} {SITE.name}. All rights reserved.
+          {/* The other two spans are this artist's, so the sign-off names them
+              too: naming the site here read as two people's footer, and had the
+              site claiming copyright over work it doesn't own. */}
+          © {new Date().getFullYear()} {artist?.displayName ?? SITE.name}. All
+          rights reserved.
         </span>
       </footer>
 
