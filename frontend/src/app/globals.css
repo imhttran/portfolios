@@ -508,18 +508,18 @@ body {
        masthead rather than a full-bleed header image. */
     margin: 0 var(--gutter);
     padding: 64px 20px;
-    background-color: #111111;
+    background-color: var(--ink-800);
     overflow: hidden;
 }
 
 .hero-statement {
     max-width: 800px;
-    /* 37px over a 42px line, weight 400, white, centred: the reference's own
-       statement, measured. Not a token - see above. */
+    /* 37px over a 42px line, weight 400, centred: the reference's own statement,
+       measured. The colour follows the theme with the band it sits in. */
     font-size: 2.3125rem;
     line-height: 42px;
     font-weight: 400;
-    color: #ffffff;
+    color: var(--text-color);
     text-align: center;
     text-wrap: balance;
 }
@@ -530,21 +530,33 @@ body {
     flex-wrap: wrap;
     justify-content: center;
     gap: 10px 32px;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--text-muted);
+}
+
+/* Each pair on one line, with a gap between label and value - they used to run
+   together into "Based inAustin, TX". */
+.hero-meta > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
 }
 
 .hero-meta dt,
 .hero-meta dd {
-    display: inline;
     font-size: 0.9375rem;
     line-height: 1.125rem;
     color: inherit;
 }
 
-.hero-meta dd {
-    margin-top: 5px;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
+/* Otherwise the email renders as the browser's default blue, which is the one
+   colour on the page and sits in the largest type after the statement. */
+.hero-meta a {
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+.hero-meta a:hover {
+    text-decoration: underline;
 }
 
 /* ==========================================================================
