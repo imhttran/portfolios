@@ -1,13 +1,14 @@
 "use client";
 
 import { LOGIN_PATH } from "@/lib/api";
+import { CLIENT_ACCESS_LABEL } from "@/lib/site";
 import { useSiteCopy } from "@/lib/useSiteCopy";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
-import { EmailLink } from "@/components/EmailLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /**
  * The client area: every album on the site, one tile each.
@@ -22,7 +23,7 @@ export default function GalleryPage() {
 
   return (
     <div className="site">
-      <PageTitle title={`Client access | ${copy.name}`} />
+      <PageTitle title={`${CLIENT_ACCESS_LABEL} | ${copy.name}`} />
       <SiteBar
         name={copy.name}
         role={copy.role}
@@ -58,17 +59,12 @@ export default function GalleryPage() {
         </p>
       ) : null}
 
-      <footer className="site-footer">
-        <span>
-          {copy.name} — {copy.role}
-        </span>
-        <span>
-          <EmailLink address={copy.email} name={copy.name} />
-        </span>
-        <span>
-          © {new Date().getFullYear()} {copy.name}
-        </span>
-      </footer>
+      <SiteFooter
+        name={copy.name}
+        role={copy.role}
+        email={copy.email}
+        instagram={copy.instagram}
+      />
     </div>
   );
 }

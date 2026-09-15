@@ -1,6 +1,6 @@
 "use client";
 
-import { splitParagraphs } from "@/lib/site";
+import { CLIENT_ACCESS_LABEL, splitParagraphs } from "@/lib/site";
 import { useSiteCopy } from "@/lib/useSiteCopy";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { useRoster } from "@/lib/useRoster";
@@ -10,6 +10,7 @@ import { EmailLink } from "@/components/EmailLink";
 import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /**
  * The front page: the statement, who is on the site, and an index of the work.
@@ -37,7 +38,7 @@ export default function PortfolioPage() {
           ...(roster.length > 1
             ? [{ href: "#artists", label: "Artists" }]
             : []),
-          { href: "/gallery", label: "Client access" },
+          { href: "/gallery", label: CLIENT_ACCESS_LABEL },
         ]}
       />
 
@@ -107,23 +108,12 @@ export default function PortfolioPage() {
         </div>
       </section>
 
-      <footer className="site-footer">
-        <span>
-          {copy.name} — {copy.role}
-        </span>
-        <span>
-          <EmailLink address={copy.email} name={copy.name} />
-          {copy.instagram ? (
-            <>
-              {" · "}
-              <InstagramLink handle={copy.instagram} name={copy.name} />
-            </>
-          ) : null}
-        </span>
-        <span>
-          © {new Date().getFullYear()} {copy.name}. All rights reserved.
-        </span>
-      </footer>
+      <SiteFooter
+        name={copy.name}
+        role={copy.role}
+        email={copy.email}
+        instagram={copy.instagram}
+      />
     </div>
   );
 }

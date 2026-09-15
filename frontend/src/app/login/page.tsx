@@ -10,7 +10,7 @@ import {
 } from "react";
 import { confirmedPasswordOrAlert, submitForm } from "@/lib/api";
 import { PageTitle } from "@/components/PageTitle";
-import { SITE } from "@/lib/site";
+import { CLIENT_ACCESS_LABEL, SITE } from "@/lib/site";
 
 type LoginResult = { token: string; twoFactorRequired?: boolean };
 
@@ -211,7 +211,7 @@ export default function LoginPage() {
         </form>
       ) : mode === "login" ? (
         <form className="login-form" onSubmit={handleLogin}>
-          <h1>Client access</h1>
+          <h1>{CLIENT_ACCESS_LABEL}</h1>
           <p>Sign in to view and download your gallery.</p>
 
           <div className="input-group">

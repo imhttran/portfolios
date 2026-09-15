@@ -1,16 +1,15 @@
 "use client";
 
 import { use, useState } from "react";
-import { LOGIN_PATH } from "@/lib/api";
-import { SITE } from "@/lib/site";
+import { CLIENT_ACCESS_LABEL, SITE } from "@/lib/site";
 import { useAlbum, type Frame } from "@/lib/usePortfolio";
 import { useDownload } from "@/lib/useDownload";
 import { AlbumSheet, SheetNote } from "@/components/AlbumSheet";
 import { BackToTop } from "@/components/BackToTop";
-import { EmailLink } from "@/components/EmailLink";
 import { PageTitle } from "@/components/PageTitle";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import { SiteBar } from "@/components/SiteBar";
+import { SiteFooter } from "@/components/SiteFooter";
 
 /**
  * One album, and the only page that shows photographs.
@@ -45,7 +44,7 @@ export default function AlbumPage({
         role={album?.credit ?? SITE.role}
         links={[
           { href: "/#work", label: "All work" },
-          { href: "/gallery", label: "Client access" },
+          { href: "/gallery", label: CLIENT_ACCESS_LABEL },
         ]}
       />
 
@@ -121,22 +120,13 @@ export default function AlbumPage({
         </main>
       )}
 
-      <footer className="site-footer">
-        <span>
-          {album?.artistName ?? SITE.name} — {album?.credit ?? SITE.role}
-        </span>
-        <span>
-          <EmailLink
-            address={SITE.email}
-            name={album?.artistName ?? SITE.name}
-          />
-          {" · "}
-          <a href={LOGIN_PATH}>Sign in</a>
-        </span>
-        <span>
-          © {new Date().getFullYear()} {album?.artistName ?? SITE.name}
-        </span>
-      </footer>
+      <SiteFooter
+        name={album?.artistName ?? SITE.name}
+        role={album?.credit ?? SITE.role}
+        email={album?.artistEmail ?? SITE.email}
+        instagram={album?.artistInstagram}
+        showSignIn
+      />
 
       {viewing !== null ? (
         <PhotoViewer

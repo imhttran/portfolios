@@ -45,6 +45,8 @@ export type Album = {
   // "dark" | "light" | "paper", or null for none of their own. Carried on the
   // album so its page can wear the artist's theme without a second request.
   artistTheme: string | null;
+  artistEmail: string | null;
+  artistInstagram: string | null;
   photoCount: number;
   // What an index tile shows for this album: its first photograph. Null for an
   // album with none imported yet.

@@ -22,6 +22,9 @@ class AlbumSummary(CamelModel):
     # That artist's own theme, or null for none of their own. Carried here so an
     # album's page can wear it without a second request for the profile.
     artist_theme: str | None = None
+    # So an album's page can sign off as its own artist rather than the site's.
+    artist_email: str | None = None
+    artist_instagram: str | None = None
     photo_count: int = 0
     # What an index tile shows for this album: its first photograph by position,
     # or null for an album with no photos yet. A path like ``download_url``, so

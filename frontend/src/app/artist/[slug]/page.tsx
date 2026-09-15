@@ -1,8 +1,7 @@
 "use client";
 
 import { use } from "react";
-import { LOGIN_PATH } from "@/lib/api";
-import { SITE, splitParagraphs } from "@/lib/site";
+import { CLIENT_ACCESS_LABEL, SITE, splitParagraphs } from "@/lib/site";
 import { useAlbumIndex } from "@/lib/usePortfolio";
 import { useRoster } from "@/lib/useRoster";
 import { AlbumIndex } from "@/components/AlbumIndex";
@@ -12,6 +11,7 @@ import { EmailLink } from "@/components/EmailLink";
 import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default function ArtistPage({
   params,
@@ -48,7 +48,7 @@ export default function ArtistPage({
           ...(roster.length > 1
             ? [{ href: "#artists", label: "Artists" }]
             : []),
-          { href: "/gallery", label: "Client access" },
+          { href: "/gallery", label: CLIENT_ACCESS_LABEL },
         ]}
       />
 
@@ -132,35 +132,13 @@ export default function ArtistPage({
         </>
       )}
 
-      <footer className="site-footer">
-        <span>
-          {artist?.displayName ?? SITE.name} — {artist?.tagline ?? SITE.role}
-        </span>
-        <span>
-          <EmailLink
-            address={artist?.contactEmail ?? SITE.email}
-            name={artist?.displayName ?? SITE.name}
-          />
-          {artist?.instagram ? (
-            <>
-              {" · "}
-              <InstagramLink
-                handle={artist.instagram}
-                name={artist?.displayName ?? SITE.name}
-              />
-            </>
-          ) : null}
-          {" · "}
-          <a href={LOGIN_PATH}>Sign in</a>
-        </span>
-        <span>
-          {/* The other two spans are this artist's, so the sign-off names them
-              too: naming the site here read as two people's footer, and had the
-              site claiming copyright over work it doesn't own. */}
-          © {new Date().getFullYear()} {artist?.displayName ?? SITE.name}. All
-          rights reserved.
-        </span>
-      </footer>
+      <SiteFooter
+        name={artist?.displayName ?? SITE.name}
+        role={artist?.tagline ?? SITE.role}
+        email={artist?.contactEmail ?? SITE.email}
+        instagram={artist?.instagram}
+        showSignIn
+      />
 
       <BackToTop />
     </div>

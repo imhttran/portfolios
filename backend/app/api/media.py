@@ -55,6 +55,10 @@ _ARTIST_COLUMNS = (
     # Same argument one step further: an album's own page wears its artist's
     # theme, and that page reads only this endpoint.
     ArtistProfile.theme.label("artist_theme"),
+    # Carried here for the same reason: the album's own footer signs off as its
+    # artist, not the site, and that's the only place this is needed.
+    ArtistProfile.contact_email.label("artist_email"),
+    ArtistProfile.instagram.label("artist_instagram"),
 )
 _PHOTO_COLUMNS = (
     Photo.id,
@@ -123,6 +127,8 @@ def _album(row, can_download: bool) -> dict:
         artist_slug=row.artist_slug,
         artist_columns=row.artist_columns,
         artist_theme=row.artist_theme,
+        artist_email=row.artist_email,
+        artist_instagram=row.artist_instagram,
         photo_count=row.photo_count,
         cover_url=(
             f"/api/media/photos/{row.cover_photo_id}/file"

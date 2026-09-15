@@ -3,6 +3,11 @@
 // These are DEFAULTS. A artist can edit the same fields in /studio, and
 // whatever they save takes precedence — this file is what a site shows before
 // anyone has logged in, and it keeps the pages renderable if the API is down.
+
+// The client area's name, repeated as a nav label on four separate pages -
+// one constant so they can't drift apart.
+export const CLIENT_ACCESS_LABEL = "Client access";
+
 export const SITE = {
   // Empty until a profile is loaded; the landing uses it to show one artist's
   // work rather than everyone's.
