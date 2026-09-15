@@ -6,7 +6,9 @@ throwaway database before the first connection is opened.
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
+from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy.ext.asyncio import (
@@ -81,15 +83,31 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 
 
 async def create_all() -> None:
-    """Create any missing tables (idempotent).
+    """Create every table directly from the models (idempotent).
 
-    Note this only *creates*: it will not add a column to a table that already
-    exists, and it will not remove one that the models no longer declare. There
-    is no migration tool here, so a schema change needs the database reset -
-    ``manage.sh`` option 9 in development, and the schema reset in tests.
+    Only for ephemeral schemas - the test suite drops and rebuilds from
+    scratch each session. The server and CLI use ``run_migrations`` instead,
+    so a real dev/prod database's schema changes go through Alembic.
     """
     async with get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+def _upgrade_to_head() -> None:
+    from alembic import command
+    from alembic.config import Config
+
+    ini_path = Path(__file__).resolve().parent.parent.parent / "alembic.ini"
+    command.upgrade(Config(str(ini_path)), "head")
+
+
+async def run_migrations() -> None:
+    """Bring the schema up to the latest Alembic revision.
+
+    Runs in a worker thread: the async env.py drives its own event loop via
+    ``asyncio.run``, which can't nest inside the one already running here.
+    """
+    await asyncio.to_thread(_upgrade_to_head)
 
 
 async def dispose_engine() -> None:

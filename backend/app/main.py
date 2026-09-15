@@ -23,7 +23,7 @@ from app.api import (
 )
 from app.api.responses import ApiError, respond
 from app.config import get_settings, load_env_files
-from app.db.session import create_all, dispose_engine, get_sessionmaker
+from app.db.session import dispose_engine, get_sessionmaker, run_migrations
 from app.services.email_queue import email_worker
 from app.services.security import renew_token_if_due
 from app.services.seeds import seed_dev_all
@@ -35,7 +35,7 @@ load_env_files()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    await create_all()
+    await run_migrations()
     # Order-sensitive; see seed_dev_all.
     await seed_dev_all(settings, get_sessionmaker())
 

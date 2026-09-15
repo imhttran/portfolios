@@ -66,10 +66,10 @@ pip install -e ".[dev]"
 python -m app.main               # same as: uvicorn app.main:app --port 8080
 ```
 
-Tables are created on boot, so a fresh database needs no migration step. In
-development a known admin is seeded, `admin@mail.com` with password
-`Password1234!`. First login from a new browser asks for a 2FA code, which is
-always `1234` in development.
+The schema is migrated to head on boot (Alembic), so a fresh database needs no
+manual setup step. In development a known admin is seeded, `admin@mail.com`
+with password `Password1234!`. First login from a new browser asks for a 2FA
+code, which is always `1234` in development.
 
 ## Configuration
 
@@ -155,12 +155,35 @@ set-role you@email.com artist
 
 ## Schema changes
 
-There is no migration tool. `create_all()` on boot only _creates_ missing tables
+Schema changes go through Alembic:
 
-- it will not add a column to an existing table, nor drop one the models no
-  longer declare. After a model change, reset the database (`manage.sh` option 9)
-  and let the dev seeds rebuild it. Tests drop the schema themselves, so they
-  always match the models.
+```bash
+alembic revision --autogenerate -m "add foo column"
+alembic upgrade head       # or just restart the server; it upgrades on boot
+```
+
+Review the generated migration before committing it - autogenerate compares
+models against the live database and doesn't catch everything (renames show
+up as a drop + add, for example). Tests still rebuild their schema straight
+from the models (`create_all`) rather than replaying migrations, since a
+from-scratch test database has no history to preserve.
+
+`migrations/versions/9416456c0fd7_initial_schema.py` was generated once,
+against an empty scratch database, so the file only contains real `CREATE
+TABLE` statements instead of a no-op diff against the already-populated dev
+database. If you ever need to redo that (e.g. squashing history, or setting
+up on a new Postgres instance from scratch):
+
+```bash
+createdb -h localhost -U postgres db_portfolios_scratch
+DATABASE_URL="postgres://postgres:postgres@localhost:5432/db_portfolios_scratch?sslmode=disable" \
+  alembic revision --autogenerate -m "initial schema"
+dropdb -h localhost -U postgres db_portfolios_scratch
+
+# Then, against the real dev DB (already has matching tables from create_all,
+# so this just records the revision instead of re-running the DDL):
+alembic stamp head
+```
 
 ## Tests
 

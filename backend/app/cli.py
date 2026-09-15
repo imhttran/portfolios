@@ -184,20 +184,20 @@ async def _revoke_subscription(argv: list[str]) -> int:
 
 
 async def _prepare_db() -> bool:
-    """Load the app's env, then make sure the schema exists.
+    """Load the app's env, then make sure the schema is at the latest revision.
 
-    Only the backend creates tables (on boot), but the CLI is often what runs
-    first after a schema reset - ``restore-media``, to bring back the work a
-    reset erased - where every command used to die on ``relation "users" does
-    not exist``.
+    Only the backend runs migrations (on boot), but the CLI is often what
+    runs first after a schema reset - ``restore-media``, to bring back the
+    work a reset erased - where every command used to die on ``relation
+    "users" does not exist``.
 
     Returns True when the schema had to be created, i.e. the database was
     empty. Callers that act on what's *missing* need to know: with no rows at
-    all, every file on disk looks like an orphan. ``create_all`` is idempotent
-    and only ever creates, so an existing schema passes through untouched.
+    all, every file on disk looks like an orphan. ``run_migrations`` is
+    idempotent, so an up-to-date schema passes through untouched.
     """
     from app.config import get_settings, load_env_files
-    from app.db.session import create_all, get_engine
+    from app.db.session import get_engine, run_migrations
 
     load_env_files()
     os.environ.setdefault("DATABASE_URL", get_settings().database_url)
@@ -206,7 +206,7 @@ async def _prepare_db() -> bool:
         existed = await conn.run_sync(
             lambda sync_conn: inspect(sync_conn).has_table("users")
         )
-    await create_all()
+    await run_migrations()
     return not existed
 
 
