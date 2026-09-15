@@ -1087,7 +1087,8 @@ body {
     margin-bottom: 8px;
 }
 
-.input-group input {
+.input-group input,
+.input-group select {
     width: 100%;
     padding: 12px;
     background-color: var(--raised-color);
@@ -1104,7 +1105,8 @@ body {
     color: var(--placeholder-color);
 }
 
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
     outline: none;
     border-color: var(--ink-300);
     box-shadow: 0 0 0 3px var(--focus-ring);

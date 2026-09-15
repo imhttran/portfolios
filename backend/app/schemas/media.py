@@ -16,6 +16,9 @@ class AlbumSummary(CamelModel):
     # Whose work it is. The name is absent if that artist has no profile yet.
     artist_name: str | None = None
     artist_slug: str | None = None
+    # That artist's ceiling on how many photographs across this album's sheet
+    # may get. Null means the grid decides on its own.
+    artist_columns: int | None = None
     photo_count: int = 0
     # Computed per visitor, so the browser never has to re-implement the rule
     # and drift from the server.
@@ -32,6 +35,7 @@ class AlbumDetail(CamelModel):
     access: str
     artist_name: str | None = None
     artist_slug: str | None = None
+    artist_columns: int | None = None
     can_download: bool = False
     download_url: str
 

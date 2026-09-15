@@ -39,6 +39,11 @@ class ArtistProfile(Base):
     contact_email: Mapped[str] = mapped_column(Text, nullable=False)
     phone: Mapped[str | None] = mapped_column(Text, nullable=True)
     instagram: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # A ceiling on how dense this artist's sheets get. The grid works its own
+    # column count out of the window; this is the artist's say in it - a
+    # portrait reads differently at two across than a wetland does at six. Null
+    # leaves the whole decision to the grid.
+    grid_columns: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # Whose profile the front page shows. Exactly one row should carry this;
     # the first artist to save a profile gets it.
     is_primary: Mapped[bool] = mapped_column(

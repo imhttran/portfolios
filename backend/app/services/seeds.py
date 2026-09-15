@@ -118,6 +118,8 @@ _DEV_PROFILE = {
     "bio": "Placeholder. Say who you are, what you make, and who you make it for.",
     "location": "Austin, TX",
     "contact_email": "tom.tran@email.com",
+    # Two across: the frames are the point, so they get the room.
+    "grid_columns": 2,
 }
 
 
@@ -169,6 +171,8 @@ _DEV_ARTIST2_PROFILE = {
     "location": "Sacramento, CA",
     "contact_email": "ted@example.com",
     "instagram": "@tednguy",
+    # Four across: a wetlands sheet at two is a lot of scrolling.
+    "grid_columns": 4,
 }
 
 

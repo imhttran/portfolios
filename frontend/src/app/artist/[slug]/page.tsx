@@ -29,6 +29,9 @@ type Album = {
   credit: string | null;
   description: string | null;
   access: string;
+  // This artist's ceiling on how many photographs across the sheet may get.
+  // Null means the grid decides on its own.
+  artistColumns: number | null;
 };
 
 type Photo = {
@@ -193,7 +196,11 @@ export default function ArtistPage({
                     {album.credit ?? album.description}
                   </p>
 
-                  <div className="sheet-grid" ref={fitGrid}>
+                  <div
+                    className="sheet-grid"
+                    data-max-cols={album.artistColumns ?? undefined}
+                    ref={fitGrid}
+                  >
                     {albumFrames.map((frame) => (
                       <figure className="frame" key={frame.id}>
                         <button

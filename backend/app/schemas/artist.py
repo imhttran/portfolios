@@ -25,6 +25,9 @@ class ArtistProfileInput(CamelModel):
     contact_email: str = ""
     phone: str = ""
     instagram: str = ""
+    # Optional. An integer 2-8, or omitted to let the grid decide. Validated in
+    # the route rather than here so the message reads like the others.
+    grid_columns: int | None = None
 
 
 class ArtistProfileOut(CamelModel):
@@ -37,4 +40,5 @@ class ArtistProfileOut(CamelModel):
     contact_email: str
     phone: str | None = None
     instagram: str | None = None
+    grid_columns: int | None = None
     updated_at: datetime

@@ -34,6 +34,7 @@ _PROFILE_COLUMNS = (
     ArtistProfile.contact_email,
     ArtistProfile.phone,
     ArtistProfile.instagram,
+    ArtistProfile.grid_columns,
     ArtistProfile.is_primary,
     ArtistProfile.updated_at,
 )
@@ -50,6 +51,7 @@ def _serialize(row) -> dict:
         contact_email=row.contact_email,
         phone=row.phone,
         instagram=row.instagram,
+        grid_columns=row.grid_columns,
         updated_at=row.updated_at,
     ).model_dump(by_alias=True, mode="json")
 
@@ -69,6 +71,11 @@ def _validate(body: ArtistProfileInput) -> str | None:
         return f"Missing required field(s): {', '.join(missing)}"
     if not validate_email(body.contact_email.strip()):
         return "Contact email is invalid"
+    # Two is the fewest columns a sheet can show and still read as a contact
+    # sheet - the grid itself never goes below two for more than one photograph.
+    # Past eight the frames are too small to be worth the ceiling.
+    if body.grid_columns is not None and not 2 <= body.grid_columns <= 8:
+        return "gridColumns must be between 2 and 8, or omitted"
     return None
 
 
@@ -139,6 +146,7 @@ async def save_my_profile(
         profile.contact_email = body.contact_email.strip()
         profile.phone = optional_trimmed(body.phone)
         profile.instagram = optional_trimmed(body.instagram)
+        profile.grid_columns = body.grid_columns
 
         await db.commit()
         await db.refresh(profile)

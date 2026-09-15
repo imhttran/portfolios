@@ -49,6 +49,9 @@ _ALBUM_COLUMNS = (
 _ARTIST_COLUMNS = (
     ArtistProfile.display_name.label("artist_name"),
     ArtistProfile.slug.label("artist_slug"),
+    # Carried on the album rather than looked up separately, because the grid
+    # sizes itself per album and that is the only place it is needed.
+    ArtistProfile.grid_columns.label("artist_columns"),
 )
 _PHOTO_COLUMNS = (
     Photo.id,
@@ -89,6 +92,7 @@ def _album_summary(row, can_download: bool) -> dict:
         access=row.access,
         artist_name=row.artist_name,
         artist_slug=row.artist_slug,
+        artist_columns=row.artist_columns,
         photo_count=row.photo_count,
         can_download=can_download,
         download_url=f"/api/media/albums/{row.slug}/download",
@@ -105,6 +109,7 @@ def _album_detail(row, can_download: bool) -> dict:
         access=row.access,
         artist_name=row.artist_name,
         artist_slug=row.artist_slug,
+        artist_columns=row.artist_columns,
         can_download=can_download,
         download_url=f"/api/media/albums/{row.slug}/download",
     ).model_dump(by_alias=True, mode="json")

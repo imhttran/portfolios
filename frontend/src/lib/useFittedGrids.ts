@@ -7,6 +7,10 @@ import { useEffect, type RefCallback } from "react";
 // on for two windows. So the grid works out its own columns from the space it
 // actually has - see bestLayout() for the arithmetic.
 //
+// The one fixed thing is the artist's ceiling, data-max-cols: how dense their
+// sheets are allowed to get. It caps the count the grid would otherwise choose,
+// so an artist who wants two across keeps two across on every window.
+//
 // The numbers come from the browser (viewport height, element widths), which
 // the server render cannot know, so the server sends the CSS fallback and this
 // replaces it as soon as the grid is in the document.
@@ -33,15 +37,17 @@ const SAME = 0.02;
 
 type Layout = { cols: number; width: number; height: number };
 
-function bestLayout(
+function layoutWithin(
   count: number,
   width: number,
   available: number,
   chrome: number,
   inset: number,
+  cap: number | null,
 ): Layout | null {
   const widest = Math.max(1, Math.floor((width + GAP) / (MIN_CELL + GAP)));
-  const max = Math.min(count, widest);
+  // No ceiling means "as many as fit", which is what count already is.
+  const max = Math.min(count, widest, cap ?? count);
   // A single column fills a narrow frame exactly, by standing one narrow strip of
   // photographs in the middle of it. That is not a contact sheet, so more than
   // one photograph always gets at least two columns.
@@ -81,6 +87,24 @@ function bestLayout(
   return close.reduce((a, b) => (b.width > a.width ? b : a));
 }
 
+// The artist's ceiling is a preference for how dense their sheets read, not a
+// hard limit: a ceiling can be unreachable. Four across a roll of twenty-seven
+// needs seven rows, and seven rows in one window leaves the frames under the
+// legible size - so that album falls back to the columns the grid would have
+// chosen on its own, because an album that fills the window is the point.
+function bestLayout(
+  count: number,
+  width: number,
+  available: number,
+  chrome: number,
+  inset: number,
+  cap: number | null,
+): Layout | null {
+  const capped = layoutWithin(count, width, available, chrome, inset, cap);
+  if (capped || cap === null) return capped;
+  return layoutWithin(count, width, available, chrome, inset, null);
+}
+
 function fitOne(grid: HTMLElement): void {
   const count = grid.childElementCount;
   const sheet = grid.closest<HTMLElement>(".sheet");
@@ -114,10 +138,14 @@ function fitOne(grid: HTMLElement): void {
   const width = grid.clientWidth;
   if (width <= 0 || available <= 0) return;
 
-  const layout = bestLayout(count, width, available, chrome, inset);
+  // The artist's ceiling, read off the element so a grid carries its own limit
+  // wherever it is rendered. Absent, or unparseable, means no ceiling.
+  const cap = Number(grid.dataset.maxCols) || null;
+
+  const layout = bestLayout(count, width, available, chrome, inset, cap);
   if (!layout) {
-    // No layout is legible in this frame, so hand the album back to the plain
-    // width-driven grid and let it scroll.
+    // No layout is legible in this frame even without a ceiling, so hand the
+    // album back to the plain width-driven grid and let it scroll.
     grid.style.removeProperty("--cols");
     grid.style.removeProperty("max-width");
     delete grid.dataset.fit;

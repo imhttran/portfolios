@@ -18,13 +18,15 @@ type Profile = {
   contactEmail: string;
   phone: string | null;
   instagram: string | null;
+  gridColumns: number | null;
 };
 
 // The form works on strings throughout: a null in a controlled input would flip
 // it to uncontrolled, and React warns about exactly that.
-type FormProfile = Omit<Profile, "phone" | "instagram"> & {
+type FormProfile = Omit<Profile, "phone" | "instagram" | "gridColumns"> & {
   phone: string;
   instagram: string;
+  gridColumns: string;
 };
 
 type Me = {
@@ -44,6 +46,7 @@ const EMPTY: FormProfile = {
   contactEmail: "",
   phone: "",
   instagram: "",
+  gridColumns: "",
 };
 
 function fromApi(profile: Profile | null): FormProfile {
@@ -52,6 +55,8 @@ function fromApi(profile: Profile | null): FormProfile {
     ...profile,
     phone: profile.phone ?? "",
     instagram: profile.instagram ?? "",
+    gridColumns:
+      profile.gridColumns === null ? "" : String(profile.gridColumns),
   };
 }
 
@@ -118,11 +123,18 @@ export default function StudioPage() {
 
     setSaving(true);
     setSaved(false);
+    // The form holds everything as strings, so the ceiling goes back to a number
+    // on the way out - or to null, which is what tells the API to let the grid
+    // decide for itself.
     const result = await callApi(
       token,
       "/api/artist/profile",
       "PUT",
-      profile,
+      {
+        ...profile,
+        gridColumns:
+          profile.gridColumns === "" ? null : Number(profile.gridColumns),
+      },
       false,
     );
     setSaving(false);
@@ -133,11 +145,28 @@ export default function StudioPage() {
   const field = (
     name: keyof FormProfile,
     label: string,
-    options?: { textarea?: boolean; hint?: string; type?: string },
+    options?: {
+      textarea?: boolean;
+      hint?: string;
+      type?: string;
+      choices?: { value: string; label: string }[];
+    },
   ) => (
     <div className="input-group">
       <label htmlFor={name}>{label}</label>
-      {options?.textarea ? (
+      {options?.choices ? (
+        <select
+          id={name}
+          value={profile[name]}
+          onChange={(e) => setProfile({ ...profile, [name]: e.target.value })}
+        >
+          {options.choices.map((choice) => (
+            <option key={choice.value} value={choice.value}>
+              {choice.label}
+            </option>
+          ))}
+        </select>
+      ) : options?.textarea ? (
         <textarea
           id={name}
           value={profile[name]}
@@ -195,6 +224,20 @@ export default function StudioPage() {
             {field("phone", "Phone", { hint: "Leave blank to omit it." })}
             {field("instagram", "Instagram", {
               hint: "Leave blank to omit it.",
+            })}
+          </fieldset>
+
+          <fieldset>
+            <legend className="mono">The sheet</legend>
+            {field("gridColumns", "Photographs across", {
+              choices: [
+                { value: "", label: "Auto" },
+                ...["2", "3", "4", "5", "6", "7", "8"].map((n) => ({
+                  value: n,
+                  label: n,
+                })),
+              ],
+              hint: "A ceiling on how dense a sheet gets. Auto fits each album to the window; a number keeps every album at that many across or fewer.",
             })}
           </fieldset>
 

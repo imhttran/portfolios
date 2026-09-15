@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from sqlalchemy import delete, select
 
+from app.config import get_settings
 from app.db.session import get_sessionmaker
 from app.models import ArtistProfile, User
+from app.services.seeds import (
+    DEV_ARTIST2_EMAIL,
+    DEV_ARTIST_EMAIL,
+    seed_dev_artist,
+    seed_dev_artist_two,
+)
 from tests.helpers import (
     cleanup,
     do_json,
@@ -113,6 +122,88 @@ async def test_artist_saves_and_the_public_reads_it_back(client):
     finally:
         await _drop_profile(email)
         await cleanup(email)
+
+
+async def test_the_grid_ceiling_round_trips_and_is_bounded(client):
+    """The artist's say in how dense their sheets get: two to eight, or none."""
+    email, token = await _artist(client)
+    try:
+        # Omitted means the grid decides, which is null rather than a number.
+        response, body = await do_json(
+            client, "PUT", "/api/artist/profile", token=token, json=VALID
+        )
+        assert response.status_code == 200, body
+        assert body["profile"]["gridColumns"] is None
+
+        response, body = await do_json(
+            client,
+            "PUT",
+            "/api/artist/profile",
+            token=token,
+            json={**VALID, "gridColumns": 4},
+        )
+        assert response.status_code == 200, body
+        assert body["profile"]["gridColumns"] == 4
+
+        # The public read serves it too: the grid sizes itself before anyone
+        # signs in, so it cannot be behind a session.
+        response, body = await do_json(client, "GET", "/api/artist/profile")
+        assert response.status_code == 200
+        assert body["profile"]["gridColumns"] == 4
+
+        # One is not a sheet, and past eight the frames stop being worth the
+        # ceiling. Both come back as the same message.
+        for out_of_range in (0, 1, 9):
+            response, body = await do_json(
+                client,
+                "PUT",
+                "/api/artist/profile",
+                token=token,
+                json={**VALID, "gridColumns": out_of_range},
+            )
+            assert response.status_code == 400
+            assert body["message"] == "gridColumns must be between 2 and 8, or omitted"
+
+        # And the ceiling can be handed back to the grid.
+        response, body = await do_json(
+            client,
+            "PUT",
+            "/api/artist/profile",
+            token=token,
+            json={**VALID, "gridColumns": None},
+        )
+        assert response.status_code == 200
+        assert body["profile"]["gridColumns"] is None
+    finally:
+        await _drop_profile(email)
+        await cleanup(email)
+
+
+async def test_the_dev_seed_starts_the_two_artists_at_their_ceilings():
+    """Ethan at two across, Ted at four: what a database reset reproduces.
+
+    The suite runs with env="", so the development seed has to be called
+    deliberately - which is also the only place these two numbers are pinned.
+    """
+    settings = replace(get_settings(), env="development")
+    sessionmaker = get_sessionmaker()
+    try:
+        await seed_dev_artist(settings, sessionmaker)
+        await seed_dev_artist_two(settings, sessionmaker)
+
+        async with sessionmaker() as session:
+            rows = (
+                await session.execute(
+                    select(ArtistProfile.slug, ArtistProfile.grid_columns)
+                )
+            ).all()
+        assert {slug: columns for slug, columns in rows} == {
+            "ethan-tran": 2,
+            "ted-nguy": 4,
+        }
+    finally:
+        await cleanup(DEV_ARTIST_EMAIL)
+        await cleanup(DEV_ARTIST2_EMAIL)
 
 
 async def test_profile_validation_rejects_missing_and_bad_email(client):
