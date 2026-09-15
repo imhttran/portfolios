@@ -38,19 +38,24 @@ function bestLayout(
   width: number,
   available: number,
   chrome: number,
+  inset: number,
 ): Layout | null {
   const widest = Math.max(1, Math.floor((width + GAP) / (MIN_CELL + GAP)));
   const max = Math.min(count, widest);
+  // A single column fills a narrow frame exactly, by standing one narrow strip of
+  // photographs in the middle of it. That is not a contact sheet, so more than
+  // one photograph always gets at least two columns.
+  const min = count > 1 ? 2 : 1;
 
   const candidates: Layout[] = [];
-  for (let cols = 1; cols <= max; cols++) {
+  for (let cols = min; cols <= max; cols++) {
     const rows = Math.ceil(count / cols);
     // The cell width at which this many rows fills the frame exactly. Solving
     // from the height, rather than from the width, is what lets an album fill a
-    // tall frame: a grid that is always as wide as the sheet cannot do it, so
-    // it is allowed to come in from the edges and sit centred instead.
+    // frame: a grid that is always as wide as the sheet cannot do it, so it is
+    // allowed to come in from the edges and sit centred instead.
     const exact =
-      (available - (rows - 1) * GAP - rows * chrome) / (rows * CROP);
+      inset + (available - (rows - 1) * GAP - rows * chrome) / (rows * CROP);
     // Never wider than its row can hold, never narrower than legible.
     const cell = Math.min(exact, (width - (cols - 1) * GAP) / cols);
     if (cell < MIN_CELL) continue;
@@ -59,7 +64,9 @@ function bestLayout(
     candidates.push({
       cols,
       width: usedWidth,
-      height: rows * (cell * CROP + chrome) + (rows - 1) * GAP,
+      // A cell is not all photograph: the frame's own side padding narrows the
+      // image, which shortens the row by that much again.
+      height: rows * (chrome + (cell - inset) * CROP) + (rows - 1) * GAP,
     });
   }
 
@@ -79,30 +86,35 @@ function fitOne(grid: HTMLElement): void {
   const sheet = grid.closest<HTMLElement>(".sheet");
   if (!count || !sheet) return;
 
-  // Everything in a cell that isn't the photograph: frame padding and caption.
-  // Measured rather than assumed, so it follows the type as it scales.
+  // Everything in a cell that isn't the photograph (frame padding and caption),
+  // and how much narrower the photograph is than the cell it sits in. Measured
+  // rather than assumed, so both follow the frame's padding and the type as
+  // they scale.
   const first = grid.firstElementChild as HTMLElement | null;
   const image = first?.querySelector("img");
-  const chrome =
-    first && image
-      ? first.getBoundingClientRect().height -
-        image.getBoundingClientRect().height
-      : 45;
+  const frameBox = first?.getBoundingClientRect();
+  const imageBox = image?.getBoundingClientRect();
+  const measured = frameBox && imageBox && imageBox.height > 0;
+  const chrome = measured ? frameBox.height - imageBox.height : 51;
+  const inset = measured ? frameBox.width - imageBox.width : 20;
 
   const style = getComputedStyle(sheet);
   const head = sheet.querySelector<HTMLElement>(".sheet-head");
   const credit = sheet.querySelector<HTMLElement>(".sheet-credit");
+  // The frame to fill is the browser window: from just under the album's own
+  // heading down to the bottom edge. The sheet's bottom padding is deliberately
+  // not subtracted - the grid reaches the edge and that padding falls below the
+  // fold, which is what separates one album from the next.
   const available =
     window.innerHeight -
     parseFloat(style.paddingTop) -
-    parseFloat(style.paddingBottom) -
     (head?.getBoundingClientRect().height ?? 0) -
     (credit?.getBoundingClientRect().height ?? 0);
 
   const width = grid.clientWidth;
   if (width <= 0 || available <= 0) return;
 
-  const layout = bestLayout(count, width, available, chrome);
+  const layout = bestLayout(count, width, available, chrome, inset);
   if (!layout) {
     // No layout is legible in this frame, so hand the album back to the plain
     // width-driven grid and let it scroll.
