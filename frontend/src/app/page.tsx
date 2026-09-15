@@ -52,6 +52,7 @@ export default function PortfolioPage() {
       <PageTitle title={`${copy.name} — ${copy.role}`} />
       <SiteBar
         over
+        icon="/icon.png"
         name={copy.name}
         role={copy.role}
         links={[

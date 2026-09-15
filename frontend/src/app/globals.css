@@ -314,9 +314,19 @@ body {
 }
 
 .site-identity {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     color: inherit;
     text-decoration: none;
+}
+
+/* The face-and-signature mark, when a page has one. Sized to the two lines of
+   type beside it rather than to the tab-icon it doubles as. */
+.site-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
 }
 
 .site-name {

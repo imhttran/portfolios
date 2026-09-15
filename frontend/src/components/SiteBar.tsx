@@ -14,17 +14,22 @@ export function SiteBar({
   role,
   links,
   over = false,
+  icon,
 }: {
   name: string;
   role: string;
   links: { href: string; label: ReactNode }[];
   over?: boolean;
+  icon?: string;
 }) {
   return (
     <header className={`site-bar${over ? " site-bar--over" : ""}`}>
       <a className="site-identity" href="/">
-        <span className="site-name">{name}</span>
-        <span className="site-role">{role}</span>
+        {icon ? <img className="site-icon" src={icon} alt="" /> : null}
+        <span>
+          <span className="site-name">{name}</span>
+          <span className="site-role">{role}</span>
+        </span>
       </a>
       <nav className="site-nav">
         {links.map((link) => (
