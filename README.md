@@ -220,30 +220,34 @@ A subscription's **level** names the highest tier it opens, so the ladder only
 reaches _down_: premium opens paid albums too, never the reverse. Looking is
 never gated — only taking a copy is.
 
-Subscriptions are granted by an admin (`POST /api/subscriptions`, with
-`level: "paid" | "premium"`, defaulting to `paid`); there is no payment provider
-wired up yet. The dev database seeds one customer at each level, so the ladder
-can be seen without changing anything — sign in as `client@mail.com` to see
-premium locked, or `premium@mail.com` to see it open. To move a level by hand:
+Subscriptions are granted from the CLI, the same way roles are; there is no
+payment provider wired up yet. The dev database seeds one customer at each
+level, so the ladder can be seen without changing anything — sign in as
+`client@mail.com` to see premium locked, or `premium@mail.com` to see it open.
 
 ```bash
-psql db_portfolios -c "update subscriptions set level='premium' where subscriber_id = 2"
+# Give a customer access to one artist's paid work.
+.venv/bin/python -m app.cli set-subscription client@mail.com ted@mail.com
+.venv/bin/python -m app.cli set-subscription client@mail.com ted@mail.com --level premium
+.venv/bin/python -m app.cli revoke-subscription client@mail.com ted@mail.com
 ```
+
+Both commands need `DATABASE_URL` in the environment (`manage.sh` sets it, and
+there is a menu entry for granting one).
 
 ## API
 
-39 endpoints under `/api/*` — see `backend/app/api/`:
+32 endpoints under `/api/*` — see `backend/app/api/`:
 
 - **Public auth** (8): signup, verify, resend-verification, forgot-password,
   reset-password, login, login/verify (2FA code), login/resend (2FA code)
 - **Public, no session** (6): media album list/detail, photo previews, the
   primary artist's profile, the artist roster, one artist by slug
-- **Self-service, any signed-in user** (5): me, profile (get/save),
-  change-password, my subscriptions
+- **Self-service, any signed-in user** (4): me, profile (get/save),
+  change-password
 - **Artist** (2): read/save your own public profile
 - **Artist management** (6): list/create/edit/delete your albums, upload photos
   into one, delete a photo
 - **Signed-in clients** (2): download one photo, download an album as a zip
-- **Staff/admin** (10): list users, create user, delete, verify/unverify,
-  change role, resend verification, reset password, list subscriptions,
-  grant a subscription, revoke a subscription
+- **Staff/admin** (7): list users, create user, delete, verify/unverify,
+  change role, resend verification, reset password

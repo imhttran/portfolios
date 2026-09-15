@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AuthUser, ensure_role, get_current_user
-from app.api.responses import fail, internal_error, msg, respond
+from app.api.responses import internal_error, msg, respond
 from app.config import Settings, get_settings
 from app.db.errors import is_unique_violation
 from app.db.session import get_db
@@ -18,7 +18,6 @@ from app.models import User
 from app.schemas.users import CreateUserRequest, PatchRoleRequest, UserSummary
 from app.services.email_queue import (
     QueueNotFound,
-    ResetKey,
     queue_password_reset,
     queue_verification_email,
 )
@@ -52,7 +51,7 @@ async def list_users(
     try:
         rows = (await db.execute(stmt)).all()
     except SQLAlchemyError as err:
-        return internal_error("List Users Error", err, False)
+        return internal_error("List Users Error", err)
 
     users = [
         UserSummary(
@@ -76,10 +75,10 @@ async def admin_create_user(
     ensure_role(user, "admin")
 
     if not validate_email(body.email):
-        return respond(400, fail("Invalid email address"))
+        return respond(400, msg("Invalid email address"))
     password_error = validate_password(body.password)
     if password_error:
-        return respond(400, fail(password_error))
+        return respond(400, msg(password_error))
 
     created = User(
         email=body.email,
@@ -96,13 +95,12 @@ async def admin_create_user(
     except SQLAlchemyError as err:
         await db.rollback()
         if is_unique_violation(err):
-            return respond(400, fail("Email is already registered"))
-        return internal_error("Admin Create User Error", err, True)
+            return respond(400, msg("Email is already registered"))
+        return internal_error("Admin Create User Error", err)
 
     return respond(
         201,
         {
-            "success": True,
             "message": "User created successfully!",
             "user": {
                 "id": created.id,
@@ -141,9 +139,9 @@ async def staff_resend_verification(
         await queue_verification_email(db, settings.frontend_url, row.id, row.email)
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Resend Verification Error", err, False)
+        return internal_error("Resend Verification Error", err)
 
-    return respond(200, {"success": True, "message": "Verification email sent"})
+    return respond(200, {"message": "Verification email sent"})
 
 
 @router.patch("/users/{user_id}/verification")
@@ -176,7 +174,7 @@ async def patch_verification(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Update Verification Error", err, False)
+        return internal_error("Update Verification Error", err)
 
     if row is None:
         return respond(404, msg("User not found"))
@@ -187,7 +185,6 @@ async def patch_verification(
     return respond(
         200,
         {
-            "success": True,
             "message": message,
             "user": {
                 "id": row.id,
@@ -229,7 +226,7 @@ async def patch_role(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Update Role Error", err, False)
+        return internal_error("Update Role Error", err)
 
     if row is None:
         return respond(404, msg("User not found"))
@@ -237,7 +234,6 @@ async def patch_role(
     return respond(
         200,
         {
-            "success": True,
             "message": "User role updated",
             "user": {"id": row.id, "email": row.email, "role": row.role},
         },
@@ -258,14 +254,14 @@ async def admin_reset_password(
         return respond(400, msg("Invalid user id"))
 
     try:
-        await queue_password_reset(db, settings.frontend_url, ResetKey.id(parsed))
+        await queue_password_reset(db, settings.frontend_url, parsed)
     except QueueNotFound:
         return respond(404, msg("User not found"))
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Admin Reset Password Error", err, False)
+        return internal_error("Admin Reset Password Error", err)
 
-    return respond(200, {"success": True, "message": "Password reset email sent"})
+    return respond(200, {"message": "Password reset email sent"})
 
 
 @router.delete("/users/{user_id}")
@@ -287,8 +283,8 @@ async def delete_user(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Delete User Error", err, False)
+        return internal_error("Delete User Error", err)
 
     if result.rowcount == 0:
         return respond(404, msg("User not found"))
-    return respond(200, {"success": True, "message": "User deleted"})
+    return respond(200, {"message": "User deleted"})

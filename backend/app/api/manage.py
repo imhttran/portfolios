@@ -111,12 +111,11 @@ async def create_album(
         await db.refresh(album)
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Create Album Error", err, False)
+        return internal_error("Create Album Error", err)
 
     return respond(
         201,
         {
-            "success": True,
             "message": f"Created '{album.title}' in the {body.access} bucket",
             "album": await _serialize(db, album),
         },
@@ -157,9 +156,9 @@ async def update_album(
         await db.refresh(album)
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Update Album Error", err, False)
+        return internal_error("Update Album Error", err)
 
-    return respond(200, {"success": True, "album": await _serialize(db, album)})
+    return respond(200, {"album": await _serialize(db, album)})
 
 
 @router.post("/albums/{slug}/photos")
@@ -216,7 +215,6 @@ async def upload_photos(
         return respond(
             400,
             {
-                "success": False,
                 "message": "None of those files could be added",
                 "added": 0,
                 "rejected": rejected,
@@ -227,12 +225,11 @@ async def upload_photos(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Upload Photos Error", err, False)
+        return internal_error("Upload Photos Error", err)
 
     return respond(
         201,
         {
-            "success": True,
             "message": (
                 f"Added {added} photo{'s' if added != 1 else ''}"
                 + (f", skipped {len(rejected)}" if rejected else "")
@@ -268,7 +265,7 @@ async def delete_album(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Delete Album Error", err, False)
+        return internal_error("Delete Album Error", err)
 
     # Only once the rows are gone: a stray file is a smaller problem than a row
     # pointing at nothing.
@@ -279,7 +276,6 @@ async def delete_album(
     return respond(
         200,
         {
-            "success": True,
             "message": f"Deleted '{album.title}' and {len(stored)} photo(s)",
         },
     )
@@ -311,11 +307,11 @@ async def delete_photo(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Delete Photo Error", err, False)
+        return internal_error("Delete Photo Error", err)
 
     # Only once the row is gone: a stray file is a smaller problem than a row
     # pointing at nothing.
     for name in files:
         storage.delete_file(name)
 
-    return respond(200, {"success": True, "message": "Photo deleted"})
+    return respond(200, {"message": "Photo deleted"})

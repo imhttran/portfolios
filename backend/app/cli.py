@@ -1,13 +1,13 @@
 """Out-of-band tooling: the ``set-role`` and ``import-album`` subcommands.
 
-Roles are granted CLI-only, so there's no HTTP endpoint and no self-service
-escalation.
+Roles and subscriptions are granted CLI-only, so there's no HTTP endpoint and
+no self-service escalation.
 
-``set-role`` deliberately does NOT load .env files - it reads DATABASE_URL
-directly, matching the Rust backend's set-role, so it works as a bootstrap tool
-when the app's config isn't in place yet. ``import-album`` is the opposite: it
-honours the app's own config (including MEDIA_ROOT), because it has to write
-where the app will read from.
+``set-role`` and ``set-subscription`` deliberately do NOT load .env files - they
+read DATABASE_URL directly, matching the Rust backend's set-role, so they work
+as bootstrap tools when the app's config isn't in place yet. The rest is the
+opposite: they honour the app's own config (including MEDIA_ROOT), because they
+have to write where the app will read from.
 """
 
 from __future__ import annotations
@@ -16,21 +16,31 @@ import argparse
 import asyncio
 import os
 import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-from sqlalchemy import inspect, select, update
+from sqlalchemy import delete, inspect, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import DEFAULT_DATABASE_URL
 from app.db.session import build_engine
-from app.models import User
+from app.models import Subscription, User
 from app.services import storage
 from app.services.roles import ROLES, role_index
+
+# Who may be the artist side of a subscription: an artist's own account, or an
+# admin acting for one. Unchanged from what the HTTP endpoint accepted before
+# granting moved to the CLI.
+ARTIST_ROLES = ("artist", "admin")
 
 
 def _usage() -> str:
     return (
         f"Usage: set-role <email> <{'|'.join(ROLES)}>\n"
+        "       set-subscription <subscriber-email> <artist-email> "
+        "[--level paid|premium]\n"
+        "       revoke-subscription <subscriber-email> <artist-email>\n"
         "       import-album --artist <email> --dir <folder> --slug <slug> "
         "--title <title> [--access free|paid|premium]\n"
         "       prune-media [--yes]\n"
@@ -40,26 +50,136 @@ def _usage() -> str:
     )
 
 
-async def _run(email: str, role: str) -> int:
-    dsn = os.environ.get("DATABASE_URL") or DEFAULT_DATABASE_URL
-    engine = build_engine(dsn)
+@asynccontextmanager
+async def _direct_session() -> AsyncIterator[AsyncSession]:
+    """A session from DATABASE_URL alone, without loading the app's env files.
+
+    The role and subscription commands are bootstrap tools: they have to work
+    when the app's config isn't in place yet, so they read the DSN the caller
+    exported (``manage.sh`` does) and nothing else.
+    """
+    engine = build_engine(os.environ.get("DATABASE_URL") or DEFAULT_DATABASE_URL)
     try:
         async with AsyncSession(engine) as session:
-            exists = await session.scalar(select(User.id).where(User.email == email))
-            if exists is None:
+            yield session
+    finally:
+        await engine.dispose()
+
+
+async def _user_by_email(session: AsyncSession, email: str):
+    """(id, email, role) for an address, or None if nobody has it."""
+    return (
+        await session.execute(
+            select(User.id, User.email, User.role).where(User.email == email)
+        )
+    ).first()
+
+
+async def _set_role(email: str, role: str) -> int:
+    try:
+        async with _direct_session() as session:
+            user = await _user_by_email(session, email)
+            if user is None:
                 print(f"No user found with email {email}")
                 return 1
             await session.execute(
-                update(User).where(User.email == email).values(role=role)
+                update(User).where(User.id == user.id).values(role=role)
             )
             await session.commit()
     except Exception as err:  # noqa: BLE001 - surface any DB failure like the CLI does
         print(f"Failed to set role: {err}")
         return 1
-    finally:
-        await engine.dispose()
 
     print(f"{email} is now {role}")
+    return 0
+
+
+async def _set_subscription(argv: list[str]) -> int:
+    """`set-subscription`: open an artist's paid work to one customer.
+
+    An admin action with no endpoint, the same way roles are: no payment
+    provider writes these rows yet, so a human grants them deliberately. The
+    level names the highest tier it opens, so ``premium`` also opens ``paid``.
+    """
+    from app.models.tiers import SUBSCRIPTION_LEVELS, TIER_PAID
+
+    parser = argparse.ArgumentParser(prog="set-subscription", add_help=True)
+    parser.add_argument("subscriber", help="the customer's email")
+    parser.add_argument("artist", help="the artist's email")
+    parser.add_argument("--level", default=TIER_PAID, choices=SUBSCRIPTION_LEVELS)
+    parsed = parser.parse_args(argv)
+
+    try:
+        async with _direct_session() as session:
+            subscriber = await _user_by_email(session, parsed.subscriber)
+            if subscriber is None:
+                print(f"No user found with email {parsed.subscriber}")
+                return 1
+            artist = await _user_by_email(session, parsed.artist)
+            if artist is None:
+                print(f"No user found with email {parsed.artist}")
+                return 1
+            if artist.role not in ARTIST_ROLES:
+                print(f"{artist.email} is not an artist")
+                return 1
+
+            existing = await session.scalar(
+                select(Subscription).where(
+                    Subscription.subscriber_id == subscriber.id,
+                    Subscription.artist_id == artist.id,
+                )
+            )
+            # Re-running with another level changes it rather than failing: a
+            # CLI has no "already subscribed" error worth returning.
+            if existing is None:
+                session.add(
+                    Subscription(
+                        subscriber_id=subscriber.id,
+                        artist_id=artist.id,
+                        level=parsed.level,
+                        note="granted via cli",
+                    )
+                )
+            else:
+                existing.level = parsed.level
+            await session.commit()
+    except Exception as err:  # noqa: BLE001 - surface any DB failure like the CLI does
+        print(f"Failed to set subscription: {err}")
+        return 1
+
+    print(f"{parsed.subscriber} can now download {parsed.artist}'s {parsed.level} work")
+    return 0
+
+
+async def _revoke_subscription(argv: list[str]) -> int:
+    """`revoke-subscription`: close an artist's paid work to one customer."""
+    parser = argparse.ArgumentParser(prog="revoke-subscription", add_help=True)
+    parser.add_argument("subscriber", help="the customer's email")
+    parser.add_argument("artist", help="the artist's email")
+    parsed = parser.parse_args(argv)
+
+    try:
+        async with _direct_session() as session:
+            subscriber = await _user_by_email(session, parsed.subscriber)
+            artist = await _user_by_email(session, parsed.artist)
+            if subscriber is None or artist is None:
+                print("No subscription between those two addresses")
+                return 1
+            result = await session.execute(
+                delete(Subscription).where(
+                    Subscription.subscriber_id == subscriber.id,
+                    Subscription.artist_id == artist.id,
+                )
+            )
+            await session.commit()
+    except Exception as err:  # noqa: BLE001 - surface any DB failure like the CLI does
+        print(f"Failed to revoke subscription: {err}")
+        return 1
+
+    if result.rowcount == 0:
+        print(f"{parsed.subscriber} does not subscribe to {parsed.artist}")
+        return 1
+    print(f"{parsed.subscriber} can no longer download {parsed.artist}'s paid work")
     return 0
 
 
@@ -90,10 +210,24 @@ async def _prepare_db() -> bool:
     return not existed
 
 
+@asynccontextmanager
+async def _session() -> AsyncIterator[AsyncSession]:
+    """A session on the app's own config, closed on the way out.
+
+    The same engine the server uses, so a command writes where the app reads,
+    and disposing it here leaves nothing open when the process exits.
+    """
+    from app.db.session import dispose_engine, get_sessionmaker
+
+    try:
+        async with get_sessionmaker()() as session:
+            yield session
+    finally:
+        await dispose_engine()
+
+
 async def _import_album(argv: list[str]) -> int:
     """`import-album`: load a folder of photos into an artist's album."""
-    # The app's own config, because MEDIA_ROOT decides where files must land.
-    from app.db.session import get_sessionmaker
     from app.models.tiers import TIERS
     from app.services.importer import import_folder
 
@@ -112,9 +246,8 @@ async def _import_album(argv: list[str]) -> int:
 
     await _prepare_db()
 
-    engine = build_engine(os.environ["DATABASE_URL"])
     try:
-        async with get_sessionmaker()() as session:
+        async with _session() as session:
             report = await import_folder(
                 session,
                 artist_email=parsed.artist,
@@ -127,8 +260,6 @@ async def _import_album(argv: list[str]) -> int:
     except (ValueError, OSError) as err:
         print(f"Import failed: {err}")
         return 1
-    finally:
-        await engine.dispose()
 
     print(f"Album '{report.album_slug}' for {report.artist_email}")
     print(f"  imported:        {report.imported}")
@@ -152,7 +283,6 @@ async def _prune_media(argv: list[str]) -> int:
     Refuses outright when the schema was just created: an empty database makes
     every file on disk look like an orphan.
     """
-    from app.db.session import get_sessionmaker
     from app.models import Photo
     from app.services.storage import media_root
 
@@ -170,20 +300,18 @@ async def _prune_media(argv: list[str]) -> int:
         )
         return 0
 
-    engine = build_engine(os.environ["DATABASE_URL"])
-    try:
-        async with get_sessionmaker()() as session:
-            rows = (
-                await session.execute(
-                    select(
-                        Photo.filename,
-                        Photo.preview_filename,
-                        Photo.thumb_filename,
-                    )
+    engine_free = None  # rows are read and the session closed before any unlink
+    async with _session() as session:
+        rows = (
+            await session.execute(
+                select(
+                    Photo.filename,
+                    Photo.preview_filename,
+                    Photo.thumb_filename,
                 )
-            ).all()
-    finally:
-        await engine.dispose()
+            )
+        ).all()
+    del engine_free
 
     referenced = {name for row in rows for name in row if name}
 
@@ -218,9 +346,7 @@ async def _prune_media(argv: list[str]) -> int:
         path.unlink(missing_ok=True)
 
     # Tidy up the directories that are now empty.
-    for path in sorted(root.rglob("*"), reverse=True):
-        if path.is_dir() and not any(path.iterdir()):
-            path.rmdir()
+    storage.prune_empty_dirs()
 
     print(f"deleted {len(orphans)} file(s), {freed / 1e6:.0f} MB freed")
     return 0
@@ -232,7 +358,6 @@ async def _prune_db(argv: list[str]) -> int:
     See services/maintenance.py for what counts as dead and why recent mail is
     kept.
     """
-    from app.db.session import get_sessionmaker
     from app.services.maintenance import DEFAULT_KEEP_DAYS, prune_db
 
     parser = argparse.ArgumentParser(prog="prune-db", add_help=True)
@@ -249,16 +374,12 @@ async def _prune_db(argv: list[str]) -> int:
 
     await _prepare_db()
 
-    engine = build_engine(os.environ["DATABASE_URL"])
-    try:
-        async with get_sessionmaker()() as session:
-            report = await prune_db(
-                session,
-                keep_days=parsed.keep_days,
-                delete_rows=parsed.yes,
-            )
-    finally:
-        await engine.dispose()
+    async with _session() as session:
+        report = await prune_db(
+            session,
+            keep_days=parsed.keep_days,
+            delete_rows=parsed.yes,
+        )
 
     print(f"dead login codes:        {report.dead_login_codes}")
     print(f"devices whose trust lapsed: {report.expired_devices}")
@@ -287,7 +408,6 @@ async def _restore_media(argv: list[str]) -> int:
     For work that didn't come from the seeds - an imported folder, a browser
     upload - which a database reset erases while leaving every file in place.
     """
-    from app.db.session import get_sessionmaker
     from app.models.tiers import TIERS
     from app.services.restore import restore_from_media
 
@@ -337,18 +457,14 @@ async def _restore_media(argv: list[str]) -> int:
 
     await _prepare_db()
 
-    engine = build_engine(os.environ["DATABASE_URL"])
-    try:
-        async with get_sessionmaker()() as session:
-            report = await restore_from_media(
-                session,
-                tiers=tiers,
-                default_tier=parsed.default_tier,
-                published=not parsed.hidden,
-                apply=parsed.yes,
-            )
-    finally:
-        await engine.dispose()
+    async with _session() as session:
+        report = await restore_from_media(
+            session,
+            tiers=tiers,
+            default_tier=parsed.default_tier,
+            published=not parsed.hidden,
+            apply=parsed.yes,
+        )
 
     print(f"albums to create:   {report.albums_created}")
     print(f"photos to restore:  {report.photos_added}")
@@ -374,7 +490,6 @@ async def _relayout_media(argv: list[str]) -> int:
     Only needed once per database - every writer already uses the current layout.
     Re-running it is a no-op.
     """
-    from app.db.session import get_sessionmaker
     from app.services.relayout import relayout_media
 
     parser = argparse.ArgumentParser(prog="relayout-media", add_help=True)
@@ -385,12 +500,8 @@ async def _relayout_media(argv: list[str]) -> int:
 
     await _prepare_db()
 
-    engine = build_engine(os.environ["DATABASE_URL"])
-    try:
-        async with get_sessionmaker()() as session:
-            report = await relayout_media(session, apply=parsed.yes)
-    finally:
-        await engine.dispose()
+    async with _session() as session:
+        report = await relayout_media(session, apply=parsed.yes)
 
     print(f"photos:              {report.rows_seen}")
     print(f"already in place:    {report.already_current}")
@@ -415,20 +526,18 @@ async def _relayout_media(argv: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
 
-    if args and args[0] == "import-album":
-        return asyncio.run(_import_album(args[1:]))
-
-    if args and args[0] == "prune-media":
-        return asyncio.run(_prune_media(args[1:]))
-
-    if args and args[0] == "prune-db":
-        return asyncio.run(_prune_db(args[1:]))
-
-    if args and args[0] == "restore-media":
-        return asyncio.run(_restore_media(args[1:]))
-
-    if args and args[0] == "relayout-media":
-        return asyncio.run(_relayout_media(args[1:]))
+    # Each subcommand dispatches on its own name and parses the rest itself.
+    subcommands = {
+        "import-album": _import_album,
+        "prune-media": _prune_media,
+        "prune-db": _prune_db,
+        "restore-media": _restore_media,
+        "relayout-media": _relayout_media,
+        "set-subscription": _set_subscription,
+        "revoke-subscription": _revoke_subscription,
+    }
+    if args and args[0] in subcommands:
+        return asyncio.run(subcommands[args[0]](args[1:]))
 
     # Tolerate being invoked as `python -m app.cli set-role <email> <role>`.
     if args and args[0] == "set-role":
@@ -443,7 +552,7 @@ def main(argv: list[str] | None = None) -> int:
         print(_usage())
         return 1
 
-    return asyncio.run(_run(parsed.email, parsed.role))
+    return asyncio.run(_set_role(parsed.email, parsed.role))
 
 
 if __name__ == "__main__":

@@ -40,23 +40,17 @@ find_python() {
 
 # ---- database ----
 
-# Personal root .env wins, .env.dev fills in for development — the same
-# precedence the backend's env loader applies. Used by the Postgres check,
-# database reset, and re-seed commands.
+# The connection string the app would use: the backend's own loader, so
+# precedence, quoting and the default can't drift from what the server does.
+# Used by the Postgres check, database reset, and re-seed commands.
 load_db_url() {
-  local url="postgres://postgres:postgres@localhost:5432/db_portfolios?sslmode=disable"
-  local found=""
-  if [ -f "$ROOT_DIR/.env" ]; then
-    found=$(grep -E '^DATABASE_URL=' "$ROOT_DIR/.env" | tail -1 | cut -d= -f2- | tr -d "\"'" || true)
-  elif [ -f "$ROOT_DIR/.env.dev" ]; then
-    found=$(grep -E '^DATABASE_URL=' "$ROOT_DIR/.env.dev" | tail -1 | cut -d= -f2- | tr -d "\"'" || true)
+  local url=""
+  if [ -x "$ROOT_DIR/backend/.venv/bin/python" ]; then
+    url=$(cd "$ROOT_DIR/backend" && .venv/bin/python -c 'import os; from app.config import DEFAULT_DATABASE_URL, load_env_files; load_env_files(); print(os.environ.get("DATABASE_URL") or DEFAULT_DATABASE_URL)' 2>/dev/null)
   fi
-  # An env file without DATABASE_URL must not blank the connection string:
-  # `psql ""` quietly targets the local default database instead of ours.
-  if [ -n "$found" ]; then
-    url="$found"
-  fi
-  echo "$url"
+  # No virtualenv yet, or the loader failed: the local default. Never blank,
+  # because `psql ""` quietly targets the OS-user database instead of ours.
+  echo "${url:-postgres://postgres:postgres@localhost:5432/db_portfolios?sslmode=disable}"
 }
 
 # ---- service control ----
@@ -204,6 +198,18 @@ set_user_role() {
   (cd "$ROOT_DIR/backend" && DATABASE_URL="$url" .venv/bin/python -m app.cli set-role "$email" "$role") || return 1
 }
 
+# Let a customer download one artist's paid work. CLI-only, like roles: no
+# payment provider writes these rows yet.
+grant_subscription() {
+  read -r -p "Customer email: " subscriber
+  read -r -p "Artist email: " artist
+  read -r -p "Level (paid/premium) [paid]: " level
+  local url
+  url=$(load_db_url)
+  (cd "$ROOT_DIR/backend" && DATABASE_URL="$url" .venv/bin/python -m app.cli \
+    set-subscription "$subscriber" "$artist" --level "${level:-paid}") || return 1
+}
+
 reset_database() {
   local url
   url=$(load_db_url)
@@ -228,6 +234,20 @@ re_seed() {
   echo -e "${GREEN}Database re-seeded.${NC}"
 }
 
+# Ask before applying a change. Non-zero when the operator says no, so the
+# caller stops without claiming the work was done.
+confirm() {
+  local answer
+  read -r -p "$1 [y/N] " answer
+  case "$answer" in
+    y | Y) return 0 ;;
+    *)
+      echo "Aborted."
+      return 1
+      ;;
+  esac
+}
+
 # Rebuild database rows for photos sitting on disk with no row. This is what a
 # reset erases: work that arrived by importing or uploading rather than by
 # seeding, since the seeds only know the placeholder albums. Additive, so
@@ -240,14 +260,7 @@ restore_media() {
   fi
   echo "→ scanning the media tree for photos with no rows ..."
   (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli restore-media --dev-tiers) || return 1
-  read -r -p "Rebuild those rows? [y/N] " confirm
-  case "$confirm" in
-    y | Y) ;;
-    *)
-      echo "Aborted."
-      return 0
-      ;;
-  esac
+  confirm "Rebuild those rows?" || return 1
   (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli restore-media --dev-tiers --yes) || return 1
   echo -e "${GREEN}Rows rebuilt.${NC}"
 }
@@ -262,14 +275,7 @@ relayout_media() {
   fi
   echo "→ checking the media tree against the current layout ..."
   (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli relayout-media) || return 1
-  read -r -p "Move those files and rows? [y/N] " confirm
-  case "$confirm" in
-    y | Y) ;;
-    *)
-      echo "Aborted."
-      return 0
-      ;;
-  esac
+  confirm "Move those files and rows?" || return 1
   (cd "$ROOT_DIR/backend" && .venv/bin/python -m app.cli relayout-media --yes) || return 1
   echo -e "${GREEN}Media moved into the current layout.${NC}"
 }
@@ -307,6 +313,7 @@ while true; do
   echo " 11) Re-seed (reset DB + restart backend)"
   echo " 12) Restore Media Rows (rebuild rows from files on disk)"
   echo " 13) Relayout Media (move files into the current layout)"
+  echo " 14) Grant Subscription (customer -> artist)"
   echo " q) Quit"
   read -r -p "Choose: " choice
   case "$choice" in
@@ -326,6 +333,7 @@ while true; do
     11) re_seed ;;
     12) restore_media ;;
     13) relayout_media ;;
+    14) grant_subscription ;;
     q) break ;;
     *) echo -e "${YELLOW}Unknown option${NC}" ;;
   esac

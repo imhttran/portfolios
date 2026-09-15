@@ -2,38 +2,37 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
 from fastapi import Depends, Request
-from sqlalchemy import exists, select
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.responses import ApiError, msg
 from app.config import Settings, get_settings
 from app.db.session import get_db
-from app.models import User, UserProfile
+from app.models import User
 from app.services.roles import has_role
 from app.services.security import verify_token
 
-# Routes a user can still reach mid-onboarding, so each gate owns its clearing
-# route and working through one gate never blocks the other's route.
-_ONBOARDING_EXEMPT = {
+# Routes a user on a temporary password can still reach. It owns the route that
+# clears the flag, so being locked out never means being unable to comply - and
+# browsing and downloading stay open, because making somebody who can read the
+# gallery change their password to read it is friction with no security value.
+_TEMP_PASSWORD_EXEMPT = {
     ("GET", "/api/me"),
     ("POST", "/api/change-password"),
     ("GET", "/api/profile"),
     ("POST", "/api/profile"),
 }
 
-# The same idea for routes whose paths carry ids, so they can't be listed as
-# exact strings. The gallery downloads live here: browsing and downloading are
-# not steps of onboarding, and making a client enter an address before they can
-# take their photos is friction with no security value.
-_ONBOARDING_EXEMPT_PATTERNS = (
-    re.compile(r"^/api/media/photos/\d+/download$"),
-    re.compile(r"^/api/media/albums/[^/]+/download$"),
-)
+
+def _temp_password_exempt(method: str, path: str) -> bool:
+    """The exact routes above, plus the download paths, which carry ids."""
+    return (method, path) in _TEMP_PASSWORD_EXEMPT or (
+        path.startswith("/api/media/") and path.endswith("/download")
+    )
 
 
 @dataclass
@@ -45,7 +44,6 @@ class AuthUser:
     role: str
     email_verified: bool
     must_change_password: bool
-    has_profile: bool
     password: str  # stored hash, for /api/change-password
 
 
@@ -68,7 +66,6 @@ async def _authenticate(
     if email is None:
         raise ApiError(403, msg("Invalid or expired token"))
 
-    has_profile = exists().where(UserProfile.user_id == User.id)
     stmt = select(
         User.id,
         User.email,
@@ -76,7 +73,6 @@ async def _authenticate(
         User.email_verified,
         User.must_change_password,
         User.password,
-        has_profile.label("has_profile"),
     ).where(User.email == email)
     try:
         row = (await db.execute(stmt)).first()
@@ -94,7 +90,6 @@ async def _authenticate(
         role=row.role,
         email_verified=row.email_verified,
         must_change_password=row.must_change_password,
-        has_profile=row.has_profile,
         password=row.password,
     )
 
@@ -111,14 +106,10 @@ async def get_current_user(
 ) -> AuthUser:
     user = await _authenticate(request, db, settings)
 
-    route = (request.method, request.url.path)
-    if route not in _ONBOARDING_EXEMPT and not any(
-        pattern.match(route[1]) for pattern in _ONBOARDING_EXEMPT_PATTERNS
+    if user.must_change_password and not _temp_password_exempt(
+        request.method, request.url.path
     ):
-        if user.must_change_password:
-            raise ApiError(403, msg("Password change required"))
-        if not user.has_profile:
-            raise ApiError(403, msg("Profile information required"))
+        raise ApiError(403, msg("Password change required"))
 
     return user
 
@@ -131,8 +122,8 @@ async def get_optional_user(
     """The caller if they're signed in and usable, otherwise None.
 
     For public endpoints that want to say what *this* visitor may do. It never
-    refuses anyone, and it deliberately skips the onboarding gates - being
-    mid-onboarding shouldn't hide download buttons on a page anyone can read.
+    refuses anyone, and it deliberately skips the password gate - a temporary
+    password shouldn't hide download buttons on a page anyone can read.
     """
     try:
         return await _authenticate(request, db, settings)

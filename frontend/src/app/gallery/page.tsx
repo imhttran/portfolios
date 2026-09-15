@@ -1,41 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { API_BASE, LOGIN_PATH, renewSessionFrom } from "@/lib/api";
-import { creditFor } from "@/lib/credits";
+import { useCallback, useState } from "react";
+import { API_BASE, LOGIN_PATH } from "@/lib/api";
 import { useSiteCopy } from "@/lib/useSiteCopy";
-import { fitGrid, useFittedGrids } from "@/lib/useFittedGrids";
-import { PhotoViewer } from "@/components/PhotoViewer";
+import { usePortfolio, type Frame } from "@/lib/usePortfolio";
+import { AlbumSheet, SheetNote } from "@/components/AlbumSheet";
 import { PageTitle } from "@/components/PageTitle";
-import { SignOut } from "@/components/SignOut";
-import { ThemeToggle } from "@/components/ThemeToggle";
-
-type Album = {
-  id: number;
-  slug: string;
-  title: string;
-  credit: string | null;
-  description: string | null;
-  // "free" | "paid" | "premium" - the tier, and whether this visitor may take
-  // a copy.
-  access: string;
-  artistName: string | null;
-  artistSlug: string | null;
-  // That artist's ceiling on how many photographs across the sheet may get.
-  // Null means the grid decides on its own.
-  artistColumns: number | null;
-  canDownload: boolean;
-  downloadUrl: string;
-};
-
-type Photo = {
-  id: number;
-  title: string | null;
-  previewUrl: string;
-  downloadUrl: string;
-};
-
-type Loaded = { album: Album; photos: Photo[] };
+import { PhotoViewer } from "@/components/PhotoViewer";
+import { SiteBar } from "@/components/SiteBar";
 
 // The backend already names every download it serves, so take the name from
 // its Content-Disposition rather than re-deriving it here - a hardcoded
@@ -48,55 +20,11 @@ function filenameFrom(response: Response, fallback: string): string {
 }
 
 export default function GalleryPage() {
-  const [albums, setAlbums] = useState<Loaded[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
+  const { sections, frames, signedIn, failed, loading, retry } = usePortfolio();
   const [viewing, setViewing] = useState<number | null>(null);
-  // Read once on mount: the download buttons only care whether a session
-  // exists, and the header only cares whether to offer Sign in or Dashboard.
-  const [signedIn, setSignedIn] = useState(false);
+  // The path being fetched right now, so only that control shows progress.
+  const [busy, setBusy] = useState<string | null>(null);
   const copy = useSiteCopy();
-
-  useEffect(() => {
-    // The album endpoints are public but answer differently for a signed-in
-    // visitor - canDownload is computed per caller - so this page has to send
-    // its token, or a subscriber sees everything as locked.
-    const token = localStorage.getItem("auth_token");
-    setSignedIn(Boolean(token));
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-
-    (async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/media/albums`, {
-          headers,
-        });
-        renewSessionFrom(response);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message);
-
-        // One detail request per album: small at this size, and it keeps the
-        // listing endpoint from inlining every photo in the library.
-        const loaded = await Promise.all(
-          (data.albums as Album[]).map(async (album) => {
-            const detail = await fetch(
-              `${API_BASE}/api/media/albums/${album.slug}`,
-              { headers },
-            );
-            renewSessionFrom(detail);
-            const body = await detail.json();
-            if (!detail.ok) throw new Error(body.message);
-            return {
-              album: body.album as Album,
-              photos: body.photos as Photo[],
-            };
-          }),
-        );
-        setAlbums(loaded);
-      } catch {
-        setFailed(true);
-      }
-    })();
-  }, []);
 
   // Downloads carry the session token, so they can't be plain links: fetch the
   // bytes, then hand the blob to a synthetic anchor click. No token means no
@@ -134,81 +62,44 @@ export default function GalleryPage() {
     }
   }, []);
 
-  const closeViewer = useCallback(() => setViewing(null), []);
-  const changeViewer = useCallback((next: number) => setViewing(next), []);
-
-  // Same flat-with-offsets shape as the public page, so the viewer's sequence
-  // runs continuously across albums here too.
-  const sections = useMemo(() => {
-    let offset = 0;
-    return (albums ?? []).map(({ album, photos }) => {
-      const start = offset;
-      offset += photos.length;
-      return {
-        album,
-        frames: photos.map((photo, i) => ({
-          ...photo,
-          credit: album.credit,
-          index: start + i,
-        })),
-      };
-    });
-  }, [albums]);
-
-  // Size every album to the frame it is shown in.
-  useFittedGrids(albums);
-
-  const frames = useMemo(() => sections.flatMap((s) => s.frames), [sections]);
-
-  const requestDownload = useCallback(
-    (photo: { id: number; downloadUrl?: string }) => {
-      if (photo.downloadUrl)
-        void saveAs(photo.downloadUrl, `photo-${photo.id}`);
-    },
-    [saveAs],
-  );
-
   return (
     <div className="site">
       <PageTitle title={`Client access | ${copy.name}`} />
-      <header className="site-bar">
-        <a className="site-identity" href="/">
-          <span className="site-name">{copy.name}</span>
-          <span className="site-role">{copy.role}</span>
-        </a>
-        <nav className="site-nav">
-          <a href="/#work">Work</a>
-          <a href="/#about">About</a>
-          {signedIn ? (
-            <a href="/dashboard">Dashboard</a>
-          ) : (
-            <a href={LOGIN_PATH}>Sign in</a>
-          )}
-          <ThemeToggle />
-          <SignOut />
-        </nav>
-      </header>
+      <SiteBar
+        name={copy.name}
+        role={copy.role}
+        links={[
+          { href: "/#work", label: "Work" },
+          { href: "/#about", label: "About" },
+          signedIn
+            ? { href: "/dashboard", label: "Dashboard" }
+            : { href: LOGIN_PATH, label: "Sign in" },
+        ]}
+      />
 
       <main>
         {failed ? (
-          <section className="sheet">
-            <p className="sheet-note">The gallery couldn’t be loaded.</p>
-          </section>
-        ) : albums === null ? (
-          <section className="sheet">
-            <p className="sheet-note">Loading the gallery…</p>
-          </section>
-        ) : albums.length === 0 ? (
-          <section className="sheet">
-            <p className="sheet-note">No albums are published yet.</p>
-          </section>
+          <SheetNote>
+            The gallery couldn’t be loaded.{" "}
+            <button type="button" className="frame-action" onClick={retry}>
+              Try again
+            </button>
+          </SheetNote>
+        ) : loading ? (
+          <SheetNote>Loading the gallery…</SheetNote>
+        ) : sections.length === 0 ? (
+          <SheetNote>No albums are published yet.</SheetNote>
         ) : (
           sections.map(({ album, frames: albumFrames }) => (
-            <section className="sheet" key={album.id}>
-              <div className="sheet-head">
-                <h1>{album.title}</h1>
-                {/* The tier is stated, and the action only appears when this
-                    visitor is entitled - the server refuses the rest anyway. */}
+            <AlbumSheet
+              key={album.id}
+              album={album}
+              frames={albumFrames}
+              heading="h1"
+              onOpen={setViewing}
+              // The tier is stated, and the action only appears when this
+              // visitor is entitled - the server refuses the rest anyway.
+              actions={
                 <span className="sheet-actions">
                   <span className="tier">{album.access}</span>
                   {album.canDownload ? (
@@ -217,7 +108,7 @@ export default function GalleryPage() {
                       className="site-button"
                       disabled={busy !== null}
                       onClick={() =>
-                        saveAs(album.downloadUrl, `${album.slug}.zip`)
+                        void saveAs(album.downloadUrl, `${album.slug}.zip`)
                       }
                     >
                       {busy === album.downloadUrl
@@ -234,74 +125,31 @@ export default function GalleryPage() {
                     </span>
                   )}
                 </span>
-              </div>
-              {/* Whose album this is matters here: with more than one artist
-                  on the site, the subscribe prompt has to name them. */}
-              <p className="sheet-credit">
-                {album.artistSlug ? (
-                  <a href={`/artist/${album.artistSlug}`}>
-                    {album.artistName ?? album.artistSlug}
-                  </a>
-                ) : null}
-                {creditFor(album) ? <> · {creditFor(album)}</> : null}
-              </p>
-
-              <div
-                className="sheet-grid"
-                data-max-cols={album.artistColumns ?? undefined}
-                ref={fitGrid}
-              >
-                {albumFrames.map((frame) => (
-                  <figure className="frame" key={frame.id}>
-                    <button
-                      type="button"
-                      className="frame-open"
-                      onClick={() => setViewing(frame.index)}
-                      aria-label={`View ${frame.title ?? "this frame"} larger`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`${API_BASE}${frame.previewUrl}`}
-                        alt=""
-                        loading="lazy"
-                      />
-                    </button>
-                    <figcaption>
-                      <span className="frame-no">
-                        {String(frame.index + 1).padStart(2, "0")}
-                      </span>
-                      <span
-                        className="frame-title"
-                        title={frame.title ?? undefined}
-                      >
-                        {frame.title ?? "Untitled"}
-                      </span>
-                      {album.canDownload ? (
-                        <button
-                          type="button"
-                          className="frame-action"
-                          disabled={busy !== null}
-                          onClick={() =>
-                            saveAs(frame.downloadUrl, `photo-${frame.id}`)
-                          }
-                        >
-                          {busy === frame.downloadUrl ? "…" : "Download"}
-                        </button>
-                      ) : (
-                        <span className="frame-locked" aria-hidden="true">
-                          Locked
-                        </span>
-                      )}
-                    </figcaption>
-                  </figure>
-                ))}
-              </div>
-            </section>
+              }
+              frameAction={(frame: Frame) =>
+                album.canDownload ? (
+                  <button
+                    type="button"
+                    className="frame-action"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      void saveAs(frame.downloadUrl, `photo-${frame.id}`)
+                    }
+                  >
+                    {busy === frame.downloadUrl ? "…" : "Download"}
+                  </button>
+                ) : (
+                  <span className="frame-locked" aria-hidden="true">
+                    Locked
+                  </span>
+                )
+              }
+            />
           ))
         )}
       </main>
 
-      {!signedIn && albums && albums.length > 0 ? (
+      {!signedIn && !loading && sections.length > 0 ? (
         <p className="sheet-note">
           <a href={LOGIN_PATH}>Sign in</a> to download free work.
         </p>
@@ -323,9 +171,13 @@ export default function GalleryPage() {
         <PhotoViewer
           items={frames}
           index={viewing}
-          onClose={closeViewer}
-          onIndexChange={changeViewer}
-          onDownload={requestDownload}
+          onClose={() => setViewing(null)}
+          onIndexChange={setViewing}
+          onDownload={(item) => {
+            if (item.downloadUrl) {
+              void saveAs(item.downloadUrl, `photo-${item.id}`);
+            }
+          }}
           busy={busy !== null}
         />
       ) : null}

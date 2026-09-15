@@ -30,7 +30,7 @@ from app.api.deps import AuthUser, get_current_user, get_optional_user
 from app.api.responses import ApiError, msg, respond
 from app.db.session import get_db
 from app.models import Album, ArtistProfile, Photo
-from app.schemas.media import AlbumDetail, AlbumSummary, PhotoOut
+from app.schemas.media import AlbumSummary, PhotoOut
 from app.services import access, storage
 
 router = APIRouter(prefix="/api/media", tags=["media"])
@@ -82,7 +82,12 @@ def _with_artist(stmt):
     )
 
 
-def _album_summary(row, can_download: bool) -> dict:
+def _album(row, can_download: bool) -> dict:
+    """An album's wire shape, plus what this visitor may do with it.
+
+    One builder for the listing and the detail response: they carry the same
+    fields, and the count rides along on both.
+    """
     return AlbumSummary(
         id=row.id,
         slug=row.slug,
@@ -94,22 +99,6 @@ def _album_summary(row, can_download: bool) -> dict:
         artist_slug=row.artist_slug,
         artist_columns=row.artist_columns,
         photo_count=row.photo_count,
-        can_download=can_download,
-        download_url=f"/api/media/albums/{row.slug}/download",
-    ).model_dump(by_alias=True, mode="json")
-
-
-def _album_detail(row, can_download: bool) -> dict:
-    return AlbumDetail(
-        id=row.id,
-        slug=row.slug,
-        title=row.title,
-        credit=row.credit,
-        description=row.description,
-        access=row.access,
-        artist_name=row.artist_name,
-        artist_slug=row.artist_slug,
-        artist_columns=row.artist_columns,
         can_download=can_download,
         download_url=f"/api/media/albums/{row.slug}/download",
     ).model_dump(by_alias=True, mode="json")
@@ -147,24 +136,27 @@ async def _album_photos(db: AsyncSession, album_id: int):
     return (await db.execute(stmt)).all()
 
 
+async def _albums(db: AsyncSession, user: AuthUser | None, artist_id: int | None):
+    """Published albums, optionally narrowed to one artist, with entitlements.
+
+    Shared by the site-wide listing, an artist's page and the roster endpoint,
+    so none of them can disagree about which albums exist or who may download
+    them.
+    """
+    stmt = _with_artist(
+        select(*_album_columns_with_count()).where(Album.is_published.is_(True))
+    )
+    if artist_id is not None:
+        stmt = stmt.where(Album.artist_id == artist_id)
+    rows = (await db.execute(stmt.order_by(Album.id))).all()
+    return [_album(row, await _can_download(db, user, row)) for row in rows]
+
+
 async def published_albums_for_artist(
     db: AsyncSession, artist_id: int, user: AuthUser | None
 ) -> list[dict]:
-    """An artist's published albums, for their page.
-
-    Shared with the roster endpoint so an artist page and the listings can't
-    disagree about which albums exist or who may download them.
-    """
-    rows = (
-        await db.execute(
-            _with_artist(
-                select(*_album_columns_with_count())
-                .where(Album.artist_id == artist_id, Album.is_published.is_(True))
-                .order_by(Album.id)
-            )
-        )
-    ).all()
-    return [_album_summary(row, await _can_download(db, user, row)) for row in rows]
+    """An artist's published albums, for their page."""
+    return await _albums(db, user, artist_id)
 
 
 async def _published_photo(db: AsyncSession, photo_id: int):
@@ -180,27 +172,20 @@ async def _published_photo(db: AsyncSession, photo_id: int):
     return photo
 
 
-async def _can_download(db: AsyncSession, user, album) -> bool:
+async def _can_download(db: AsyncSession, user, row) -> bool:
+    """Whether this visitor may take ``row`` - an album row or a photo row.
+
+    Both carry the album's ``access`` and its owner's id, which is all the rule
+    needs; see services/access.py.
+    """
     if user is None:
         return False
     return await access.may_download(
         db,
         user_id=user.id,
         role=user.role,
-        artist_id=album.artist_id,
-        access=album.access,
-    )
-
-
-async def _may_download_photo(db: AsyncSession, user, photo) -> bool:
-    if user is None:
-        return False
-    return await access.may_download(
-        db,
-        user_id=user.id,
-        role=user.role,
-        artist_id=photo.artist_id,
-        access=photo.access,
+        artist_id=row.artist_id,
+        access=row.access,
     )
 
 
@@ -231,19 +216,7 @@ async def list_albums(
     user: AuthUser | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
-    rows = (
-        await db.execute(
-            _with_artist(
-                select(*_album_columns_with_count())
-                .where(Album.is_published.is_(True))
-                .order_by(Album.id)
-            )
-        )
-    ).all()
-    albums = []
-    for row in rows:
-        albums.append(_album_summary(row, await _can_download(db, user, row)))
-    return respond(200, {"albums": albums})
+    return respond(200, {"albums": await _albums(db, user, None)})
 
 
 @router.get("/albums/{slug}")
@@ -261,7 +234,7 @@ async def get_album(
     return respond(
         200,
         {
-            "album": _album_detail(album, can_download),
+            "album": _album(album, can_download),
             "photos": [_photo(photo, can_download) for photo in photos],
         },
     )
@@ -286,7 +259,7 @@ async def download_photo(
     Free photos: any registered user. Paid photos: a subscriber of that artist.
     """
     photo = await _published_photo(db, photo_id)
-    if not await _may_download_photo(db, user, photo):
+    if not await _can_download(db, user, photo):
         raise ApiError(
             403,
             msg("This photo is part of a paid portfolio. Subscribe to download it."),

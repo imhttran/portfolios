@@ -56,7 +56,7 @@ Tables:
 | Table             | Purpose                                                                      |
 | ----------------- | ---------------------------------------------------------------------------- |
 | `users`           | accounts: email, scrypt password, role, verify/reset tokens                  |
-| `user_profiles`   | one-time registration details (`ON DELETE CASCADE`)                          |
+| `user_profiles`   | a user's name, optional (`ON DELETE CASCADE`)                                |
 | `artist_profiles` | the public copy each artist edits in `/studio`, and their URL slug           |
 | `albums`          | a portfolio, its owning artist, and its tier on the free/paid/premium ladder |
 | `photos`          | ordered photos: original + preview + thumbnail, and their dimensions         |
@@ -76,7 +76,7 @@ all with the password `Password1234!`:
 | `client@mail.com`  | client | `paid` on both artists                   |
 | `premium@mail.com` | client | `premium` on both                        |
 
-Each gets a registration profile so the onboarding gates don't stop them. Two
+Each gets a first and last name. Two
 artist profiles are seeded, three placeholder albums for the first artist (one
 per tier), and four subscriptions — one customer at each level, subscribed to
 both artists.

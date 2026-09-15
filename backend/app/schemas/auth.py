@@ -48,4 +48,3 @@ class MeUser(CamelModel):
     role: str
     email_verified: bool = Field(alias="emailVerified")
     must_change_password: bool = Field(alias="mustChangePassword")
-    has_profile: bool = Field(alias="hasProfile")

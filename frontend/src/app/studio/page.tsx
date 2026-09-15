@@ -34,7 +34,6 @@ type Me = {
   email: string;
   role: string;
   mustChangePassword: boolean;
-  hasProfile: boolean;
 };
 
 const EMPTY: FormProfile = {
@@ -93,10 +92,6 @@ export default function StudioPage() {
         }
         if (me.user.mustChangePassword) {
           window.location.href = "/change-password";
-          return;
-        }
-        if (!me.user.hasProfile) {
-          window.location.href = "/profile";
           return;
         }
         if (!hasRole(me.user.role, "artist")) {

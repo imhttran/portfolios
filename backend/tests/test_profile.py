@@ -29,7 +29,7 @@ async def test_profile_flow(client):
         response, body = await fill_profile(client, token)
         assert response.status_code == 201, body
         assert body["profile"]["firstName"] == "Test"
-        assert body["profile"]["country"] == "US"  # blank country defaults to US
+        assert body["profile"]["lastName"] == "User"
 
         response, body = await do_json(client, "GET", "/api/profile", token=token)
         assert response.status_code == 200
@@ -54,10 +54,9 @@ async def test_profile_validation_error(client):
             "POST",
             "/api/profile",
             token=token,
-            json={"firstName": "Test"},  # everything else missing
+            json={"firstName": "Test"},  # no last name
         )
         assert response.status_code == 400
         assert "Missing required field(s)" in body["message"]
-        assert "success" not in body  # validation errors use the bare message shape
     finally:
         await cleanup(email)

@@ -1,7 +1,8 @@
 """Email templates and the mailer.
 
-Real SMTP when SMTP_HOST is set, otherwise the email is logged instead of sent,
-so dev needs no mail server.
+Each template returns the queue row it should become, so an enqueue is just
+``db.add``. Real SMTP when SMTP_HOST is set, otherwise the email is logged
+instead of sent, so dev needs no mail server.
 """
 
 from __future__ import annotations
@@ -10,25 +11,18 @@ import json
 import smtplib
 import ssl
 import sys
-from dataclasses import dataclass
 from email.message import EmailMessage
 
 from app.config import Settings
-
-
-@dataclass(frozen=True)
-class EmailData:
-    to: str
-    subject: str
-    body: str
+from app.models import EmailQueue
 
 
 class MailError(Exception):
     """Raised when an SMTP send fails (the worker records it and retries)."""
 
 
-def welcome_email(to: str) -> EmailData:
-    return EmailData(
+def welcome_email(to: str) -> EmailQueue:
+    return EmailQueue(
         to=to,
         subject="Your account has been created",
         body=(
@@ -37,8 +31,8 @@ def welcome_email(to: str) -> EmailData:
     )
 
 
-def verification_email(to: str, link: str) -> EmailData:
-    return EmailData(
+def verification_email(to: str, link: str) -> EmailQueue:
+    return EmailQueue(
         to=to,
         subject="Verify your email address",
         body=(
@@ -48,8 +42,8 @@ def verification_email(to: str, link: str) -> EmailData:
     )
 
 
-def password_reset_email(to: str, link: str) -> EmailData:
-    return EmailData(
+def password_reset_email(to: str, link: str) -> EmailQueue:
+    return EmailQueue(
         to=to,
         subject="Reset your password",
         body=(
@@ -61,8 +55,8 @@ def password_reset_email(to: str, link: str) -> EmailData:
     )
 
 
-def login_code_email(to: str, code: str) -> EmailData:
-    return EmailData(
+def login_code_email(to: str, code: str) -> EmailQueue:
+    return EmailQueue(
         to=to,
         subject="Your login code",
         body=(

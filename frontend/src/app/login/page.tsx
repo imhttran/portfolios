@@ -37,12 +37,9 @@ export default function LoginPage() {
     void submitForm<LoginResult>(
       "/api/login/verify",
       { token: pendingToken, code, deviceId: getDeviceId() },
-      {
-        busyLabel: "Verifying…",
-        onSuccess: (result) => {
-          localStorage.setItem("auth_token", result.token);
-          window.location.href = "/dashboard";
-        },
+      (result) => {
+        localStorage.setItem("auth_token", result.token);
+        window.location.href = "/dashboard";
       },
       setBusy,
     );
@@ -87,13 +84,10 @@ export default function LoginPage() {
     void submitForm(
       "/api/login/resend",
       { token: pendingToken },
-      {
-        busyLabel: "Resending…",
-        onSuccess: () => {
-          setResends((n) => n + 1);
-          setDigits(["", "", "", ""]);
-          digitRefs.current[0]?.focus();
-        },
+      () => {
+        setResends((n) => n + 1);
+        setDigits(["", "", "", ""]);
+        digitRefs.current[0]?.focus();
       },
       setBusy,
     );
@@ -115,16 +109,13 @@ export default function LoginPage() {
         password: data.get("password"),
         deviceId: getDeviceId(),
       },
-      {
-        busyLabel: "Signing in…",
-        onSuccess: (result) => {
-          if (result.twoFactorRequired) {
-            setPendingToken(result.token);
-          } else {
-            localStorage.setItem("auth_token", result.token);
-            window.location.href = "/dashboard";
-          }
-        },
+      (result) => {
+        if (result.twoFactorRequired) {
+          setPendingToken(result.token);
+        } else {
+          localStorage.setItem("auth_token", result.token);
+          window.location.href = "/dashboard";
+        }
       },
       setBusy,
     );
@@ -141,12 +132,9 @@ export default function LoginPage() {
     void submitForm(
       "/api/signup",
       { email: data.get("email"), password },
-      {
-        busyLabel: "Registering…",
-        onSuccess: () => {
-          alert("Account created! You can now log in.");
-          setMode("login");
-        },
+      () => {
+        alert("Account created! You can now log in.");
+        setMode("login");
       },
       setBusy,
     );

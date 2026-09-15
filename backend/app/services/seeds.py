@@ -55,7 +55,7 @@ async def _seed_user(
     password: str,
     role: str,
 ) -> None:
-    """A verified user with a filled profile, so no gate stops it."""
+    """A verified user with a name, ready to use."""
     async with sessionmaker() as session:
         user_id = (
             await session.execute(
@@ -77,18 +77,13 @@ async def _seed_user(
                 print(f"[seed] failed: {email} could not be created", file=sys.stderr)
                 return
 
-        # Pre-fill the profile so the onboarding gate doesn't block the very
-        # account that exists to exercise the download path.
+        # A name, so the demo accounts look like people rather than addresses.
         await session.execute(
             insert(UserProfile)
             .values(
                 user_id=user_id,
                 first_name="Dev",
                 last_name=role.capitalize(),
-                address="N/A",
-                state="N/A",
-                zip="00000",
-                phone="N/A",
             )
             .on_conflict_do_nothing(index_elements=["user_id"])
         )
@@ -485,3 +480,22 @@ async def seed_dev_subscribers(
 
     if added:
         print(f"[seed] dev subscriptions ready (+{added})", file=sys.stderr)
+
+
+async def seed_dev_all(
+    settings: Settings, sessionmaker: async_sessionmaker[AsyncSession]
+) -> None:
+    """Everything a dev database should contain, in the one order that works.
+
+    Every step is idempotent, so this is safe on each boot. The order is why it
+    is a single call rather than seven: ``restore-media`` matches
+    ``artists/{id}-{slug}/``, so it needs the artists to exist first, and it goes
+    last because it rebuilds work the seeds above don't otherwise know about.
+    """
+    await seed_dev_admin(settings, sessionmaker)
+    await seed_dev_client(settings, sessionmaker)
+    await seed_dev_artist(settings, sessionmaker)
+    await seed_dev_artist_two(settings, sessionmaker)
+    await seed_dev_gallery(settings, sessionmaker)
+    await seed_dev_subscribers(settings, sessionmaker)
+    await seed_dev_restore_media(settings, sessionmaker)

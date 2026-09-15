@@ -135,9 +135,3 @@ def get_settings() -> Settings:
         ),
         device_trust_days=_int_or("DEVICE_TRUST_DAYS", 30),
     )
-
-
-def fatal(context: str, err: object) -> None:
-    """Print and exit, matching the Rust backend's fatal()."""
-    print(f"{context}: {err}", file=sys.stderr)
-    raise SystemExit(1)

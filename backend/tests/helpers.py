@@ -90,15 +90,7 @@ async def fill_profile(client: AsyncClient, token: str):
         "POST",
         "/api/profile",
         token=token,
-        json={
-            "firstName": "Test",
-            "lastName": "User",
-            "address": "1 Test St",
-            "state": "CA",
-            "zip": "94043",
-            "phone": "555-123-4567",
-            "communicationPreference": "email",
-        },
+        json={"firstName": "Test", "lastName": "User"},
     )
 
 

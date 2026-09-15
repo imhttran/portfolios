@@ -1,7 +1,8 @@
 """HTTP response helpers shared by the routers.
 
-Shapes mirror the Rust backend exactly: ``msg`` is ``{message}`` and ``fail``
-adds ``success: false`` for the endpoints that return it.
+One shape, everywhere: an error body is ``{message}`` and nothing else, so a
+client reads ``message`` and an HTTP status without a second convention to
+learn.
 """
 
 from __future__ import annotations
@@ -21,17 +22,10 @@ def msg(message: str) -> dict[str, Any]:
     return {"message": message}
 
 
-def fail(message: str) -> dict[str, Any]:
-    return {"success": False, "message": message}
-
-
-def internal_error(context: str, err: object, with_success: bool) -> JSONResponse:
+def internal_error(context: str, err: object) -> JSONResponse:
     """Log the server-side reason, then answer with the generic 500 body."""
     print(f"{context}: {err}", file=sys.stderr)
-    body = (
-        fail("Internal server error") if with_success else msg("Internal server error")
-    )
-    return respond(500, body)
+    return respond(500, msg("Internal server error"))
 
 
 class ApiError(Exception):

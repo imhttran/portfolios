@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import sys
 from datetime import UTC, datetime, timedelta
-from enum import StrEnum
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -13,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.config import Settings
 from app.models import EmailQueue, User
 from app.services import mail
-from app.services.mail import EmailData
 from app.services.security import random_token
 
 RESET_TOKEN_TTL_HOURS = 1
@@ -25,46 +23,22 @@ class QueueNotFound(Exception):
     """The target user does not exist (Prisma's P2025 equivalent)."""
 
 
-class ResetKeyType(StrEnum):
-    EMAIL = "email"
-    ID = "id"
-
-
-class ResetKey:
-    """Keyed by email (self-service) or id (admin-triggered reset)."""
-
-    def __init__(self, kind: ResetKeyType, value: str | int):
-        self.kind = kind
-        self.value = value
-
-    @classmethod
-    def email(cls, email: str) -> ResetKey:
-        return cls(ResetKeyType.EMAIL, email)
-
-    @classmethod
-    def id(cls, user_id: int) -> ResetKey:
-        return cls(ResetKeyType.ID, user_id)
-
-
-async def enqueue_email(session: AsyncSession, row: EmailData) -> None:
-    """Queue one email row on the caller's session/transaction."""
-    session.add(EmailQueue(to=row.to, subject=row.subject, body=row.body))
-
-
 async def queue_password_reset(
-    session: AsyncSession, frontend_url: str, key: ResetKey
+    session: AsyncSession, frontend_url: str, who: str | int
 ) -> None:
     """Set a reset token and queue the reset email.
 
-    The update itself both finds the user and sets the token, so callers don't
-    need their own lookup. Raises QueueNotFound when nothing matched.
+    ``who`` is an email for a self-service reset, or a user id for one an admin
+    triggers. The update itself both finds the user and sets the token, so
+    callers don't need their own lookup. Raises QueueNotFound when nothing
+    matched.
     """
     token = random_token()
     expiry = datetime.now(UTC) + timedelta(hours=RESET_TOKEN_TTL_HOURS)
-    column = User.email if key.kind is ResetKeyType.EMAIL else User.id
+    column = User.id if isinstance(who, int) else User.email
     stmt = (
         update(User)
-        .where(column == key.value)
+        .where(column == who)
         .values(reset_token=token, reset_token_expiry=expiry)
         .returning(User.email)
     )
@@ -73,10 +47,11 @@ async def queue_password_reset(
         await session.rollback()
         raise QueueNotFound()
 
-    row = mail.password_reset_email(
-        email, mail.token_link(frontend_url, "reset-password", token)
+    session.add(
+        mail.password_reset_email(
+            email, mail.token_link(frontend_url, "reset-password", token)
+        )
     )
-    await enqueue_email(session, row)
     await session.commit()
 
 
@@ -87,8 +62,9 @@ async def queue_verification_email(
     await session.execute(
         update(User).where(User.id == user_id).values(verification_token=token)
     )
-    row = mail.verification_email(email, mail.token_link(frontend_url, "verify", token))
-    await enqueue_email(session, row)
+    session.add(
+        mail.verification_email(email, mail.token_link(frontend_url, "verify", token))
+    )
     await session.commit()
 
 

@@ -101,9 +101,6 @@ class PhotoPaths:
     preview: str
     thumb: str
 
-    def all(self) -> tuple[str, ...]:
-        return (self.original, self.preview, self.thumb)
-
 
 def photo_paths(
     *, artist_key: str, album_slug: str, stem: str, suffix: str

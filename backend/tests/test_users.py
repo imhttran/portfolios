@@ -96,10 +96,12 @@ async def test_admin_create_user_forces_password_change(client):
         )
         assert response.status_code == 200, body
 
-        # Now the profile gate kicks in.
+        # Once the password is changed the account is fully usable - there is no
+        # second gate behind it asking for a registration form. This account is
+        # a client, so the only thing that refuses it now is its role.
         response, body = await do_json(client, "GET", "/api/users", token=token)
         assert response.status_code == 403
-        assert body["message"] == "Profile information required"
+        assert body["message"] == "Insufficient permissions"
     finally:
         await cleanup(created_email)
         await cleanup(admin_email)

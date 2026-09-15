@@ -12,9 +12,9 @@ from app.services.security import issue_token, issue_token_with_ttl
 from tests.helpers import (
     cleanup,
     do_json,
-    fill_profile,
     login,
     requires_db,
+    set_role,
     signup,
     unique_email,
 )
@@ -25,7 +25,6 @@ pytestmark = requires_db
 async def test_signup_weak_password(client):
     response, body = await signup(client, unique_email(), password="weak")
     assert response.status_code == 400
-    assert body["success"] is False
     assert "at least 8 characters" in body["message"]
 
 
@@ -347,21 +346,20 @@ async def test_change_password(client):
         await cleanup(email)
 
 
-async def test_onboarding_gate_requires_profile(client):
+async def test_a_staff_account_needs_no_registration_form(client):
+    """A session and the right role are enough.
+
+    This used to be a gate: staff and admin were blocked until they filled in a
+    mailing address. Nothing collects one now.
+    """
     email = unique_email()
     try:
         await signup(client, email)
+        await set_role(email, "staff")
         token = await login(client, email)
 
-        # No profile yet -> gated on any non-exempt route.
         response, body = await do_json(client, "GET", "/api/users", token=token)
-        assert response.status_code == 403
-        assert body["message"] == "Profile information required"
-
-        # The profile route itself is reachable.
-        response, body = await fill_profile(client, token)
-        assert response.status_code == 201, body
-        assert body["profile"]["firstName"] == "Test"
+        assert response.status_code == 200, body
     finally:
         await cleanup(email)
 

@@ -22,13 +22,10 @@ export default function ResetPasswordPage() {
         token: new URLSearchParams(window.location.search).get("token"),
         password,
       },
-      {
-        busyLabel: "Resetting…",
-        onSuccess: (result) => {
-          localStorage.setItem("auth_token", result.token);
-          alert(result.message);
-          window.location.href = "/dashboard";
-        },
+      (result) => {
+        localStorage.setItem("auth_token", result.token);
+        alert(result.message);
+        window.location.href = "/dashboard";
       },
       setBusy,
     );

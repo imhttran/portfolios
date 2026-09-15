@@ -1514,14 +1514,6 @@ body {
     font-weight: 400;
 }
 
-.user-table th.sortable {
-    cursor: pointer;
-}
-
-.user-table th.sortable:hover {
-    color: var(--text-color);
-}
-
 .user-table tbody tr:hover {
     background: var(--raised-color);
 }
@@ -1621,39 +1613,6 @@ body {
 .actions-menu-list .link-button.button-danger:hover {
     background: none;
     color: var(--danger-hover);
-}
-
-.user-pager {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 16px;
-    font-family: var(--font-mono);
-    font-size: 0.625rem;
-    letter-spacing: 0.12em;
-    color: var(--text-muted);
-}
-
-.user-pager button {
-    padding: 6px 12px;
-    border: var(--rule);
-    background: transparent;
-    color: var(--text-color);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.user-pager button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.user-pager button:not(:disabled):hover {
-    background-color: var(--raised-color);
 }
 
 /* Danger (destructive) button */

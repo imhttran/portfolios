@@ -9,6 +9,8 @@ export type ViewerItem = {
   // The preview file, not the original: the viewer shows the same file the grid
   // loaded, so opening a frame costs no extra download.
   previewUrl: string;
+  // Where a download of this frame's original lives, when one is on offer.
+  downloadUrl?: string;
   // The photograph's true dimensions, straight from the row. Preferred over
   // measuring the loaded preview, which is downscaled and would understate it.
   width?: number | null;

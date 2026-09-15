@@ -46,10 +46,11 @@ class User(Base):
 
 
 class UserProfile(Base):
-    """One-time registration details.
+    """What a user told us about themselves, beyond their login address.
 
-    A missing row (not a boolean flag) is what gates a user into the completion
-    form, so the data itself is the "is this done" signal.
+    Optional: nothing gates on it, and nothing else in the app reads it yet -
+    the site's public copy belongs to the artist's profile in
+    ``artist_profiles``, not here.
     """
 
     __tablename__ = "user_profiles"
@@ -63,17 +64,3 @@ class UserProfile(Base):
     )
     first_name: Mapped[str] = mapped_column(Text, nullable=False)
     last_name: Mapped[str] = mapped_column(Text, nullable=False)
-    address: Mapped[str] = mapped_column(Text, nullable=False)
-    address2: Mapped[str | None] = mapped_column(Text, nullable=True)
-    state: Mapped[str] = mapped_column(Text, nullable=False)
-    zip: Mapped[str] = mapped_column(Text, nullable=False)
-    country: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("'US'"), default="US"
-    )
-    phone: Mapped[str] = mapped_column(Text, nullable=False)
-    communication_preference: Mapped[str] = mapped_column(
-        Text, nullable=False, server_default=text("'email'"), default="email"
-    )
-    linkedin: Mapped[str | None] = mapped_column(Text, nullable=True)
-    github: Mapped[str | None] = mapped_column(Text, nullable=True)
-    alt_email: Mapped[str | None] = mapped_column(Text, nullable=True)

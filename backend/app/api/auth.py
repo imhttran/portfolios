@@ -16,7 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AuthUser, get_current_user
-from app.api.responses import fail, internal_error, msg, respond
+from app.api.responses import internal_error, msg, respond
 from app.config import Settings, get_settings
 from app.db.errors import is_unique_violation
 from app.db.session import get_db
@@ -34,8 +34,6 @@ from app.schemas.auth import (
 from app.services import mail
 from app.services.email_queue import (
     QueueNotFound,
-    ResetKey,
-    enqueue_email,
     queue_password_reset,
     queue_verification_email,
 )
@@ -68,7 +66,6 @@ MAX_RESENDS = 3
 
 def _login_success(email: str, token: str) -> dict:
     return {
-        "success": True,
         "message": "Login successful!",
         "token": token,
         "user": {"email": email},
@@ -83,7 +80,6 @@ async def me(user: AuthUser = Depends(get_current_user)) -> object:
         role=user.role,
         emailVerified=user.email_verified,
         mustChangePassword=user.must_change_password,
-        hasProfile=user.has_profile,
     )
     return respond(
         200,
@@ -101,10 +97,10 @@ async def signup(
     settings: Settings = Depends(get_settings),
 ) -> object:
     if not validate_email(body.email):
-        return respond(400, fail("Invalid email address"))
+        return respond(400, msg("Invalid email address"))
     password_error = validate_password(body.password)
     if password_error:
-        return respond(400, fail(password_error))
+        return respond(400, msg(password_error))
 
     token = random_token()
     try:
@@ -119,9 +115,9 @@ async def signup(
             )
         )
         await db.flush()
-        await enqueue_email(db, mail.welcome_email(body.email))
+        db.add(mail.welcome_email(body.email))
         link = mail.token_link(settings.frontend_url, "verify", token)
-        await enqueue_email(db, mail.verification_email(body.email, link))
+        db.add(mail.verification_email(body.email, link))
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
@@ -132,13 +128,12 @@ async def signup(
                 f"[signup] rejected: email already registered (email={body.email})",
                 file=sys.stderr,
             )
-            return respond(400, fail("Unable to sign up. Please try again later."))
-        return internal_error("Signup Error", err, True)
+            return respond(400, msg("Unable to sign up. Please try again later."))
+        return internal_error("Signup Error", err)
 
     return respond(
         201,
         {
-            "success": True,
             "message": "User created successfully!",
             "user": {"email": body.email},
         },
@@ -151,11 +146,11 @@ async def verify(
     db: AsyncSession = Depends(get_db),
 ) -> object:
     if not token:
-        return respond(400, fail("Missing verification token"))
+        return respond(400, msg("Missing verification token"))
 
     user_id = await db.scalar(select(User.id).where(User.verification_token == token))
     if user_id is None:
-        return respond(400, fail("Invalid or expired verification link"))
+        return respond(400, msg("Invalid or expired verification link"))
 
     try:
         await db.execute(
@@ -166,9 +161,9 @@ async def verify(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Verify Error", err, True)
+        return internal_error("Verify Error", err)
 
-    return respond(200, {"success": True, "message": "Email verified successfully!"})
+    return respond(200, {"message": "Email verified successfully!"})
 
 
 @router.post("/resend-verification")
@@ -178,7 +173,7 @@ async def resend_verification(
     settings: Settings = Depends(get_settings),
 ) -> object:
     if not validate_email(body.email):
-        return respond(400, fail("Invalid email address"))
+        return respond(400, msg("Invalid email address"))
 
     row = (
         await db.execute(
@@ -194,12 +189,11 @@ async def resend_verification(
             )
         except SQLAlchemyError as err:
             await db.rollback()
-            return internal_error("Resend Verification Error", err, True)
+            return internal_error("Resend Verification Error", err)
 
     return respond(
         200,
         {
-            "success": True,
             "message": (
                 "If that email is registered and unverified, "
                 "a verification link has been sent."
@@ -215,23 +209,20 @@ async def forgot_password(
     settings: Settings = Depends(get_settings),
 ) -> object:
     if not validate_email(body.email):
-        return respond(400, fail("Invalid email address"))
+        return respond(400, msg("Invalid email address"))
 
     try:
-        await queue_password_reset(
-            db, settings.frontend_url, ResetKey.email(body.email)
-        )
+        await queue_password_reset(db, settings.frontend_url, body.email)
     except QueueNotFound:
         pass  # fall through to the generic response
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Forgot Password Error", err, True)
+        return internal_error("Forgot Password Error", err)
 
     # Same response whether or not the account exists.
     return respond(
         200,
         {
-            "success": True,
             "message": "If that email is registered, a reset link has been sent.",
         },
     )
@@ -244,10 +235,10 @@ async def reset_password(
     settings: Settings = Depends(get_settings),
 ) -> object:
     if not body.token:
-        return respond(400, fail("Missing reset token"))
+        return respond(400, msg("Missing reset token"))
     password_error = validate_password(body.password)
     if password_error:
-        return respond(400, fail(password_error))
+        return respond(400, msg(password_error))
 
     row = (
         await db.execute(
@@ -258,7 +249,7 @@ async def reset_password(
     ).first()
     now = datetime.now(UTC)
     if row is None or row.reset_token_expiry is None or row.reset_token_expiry < now:
-        return respond(400, fail("Invalid or expired reset link"))
+        return respond(400, msg("Invalid or expired reset link"))
 
     try:
         await db.execute(
@@ -274,12 +265,11 @@ async def reset_password(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Reset Password Error", err, True)
+        return internal_error("Reset Password Error", err)
 
     return respond(
         200,
         {
-            "success": True,
             "message": "Password reset successfully!",
             "token": issue_token(row.email, settings.jwt_secret),
             "user": {"email": row.email},
@@ -301,10 +291,10 @@ async def login(
         )
     ).first()
     if row is None or not verify_password(body.password, row.password):
-        return respond(401, fail("Invalid email or password"))
+        return respond(401, msg("Invalid email or password"))
 
     if settings.email_verification_required and not row.email_verified:
-        return respond(403, fail("Please verify your email before logging in."))
+        return respond(403, msg("Please verify your email before logging in."))
 
     # Trusted device? Skip 2FA - but only while its trust hasn't lapsed.
     if body.device_id:
@@ -342,13 +332,12 @@ async def login(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Login Error", err, False)
+        return internal_error("Login Error", err)
 
     await _send_login_code(db, body.email, code)
     return respond(
         200,
         {
-            "success": True,
             "twoFactorRequired": True,
             "token": pending,
             "message": "Enter the code sent to your device",
@@ -377,13 +366,13 @@ async def verify_login(
         )
     ).first()
     if row is None:
-        return respond(400, fail("Invalid or expired code"))
+        return respond(400, msg("Invalid or expired code"))
 
     now = datetime.now(UTC)
     # Lock the code after a handful of failed tries so a 4-digit code can't be
     # brute-forced inside its 10-minute window.
     if row.used or now > row.expires_at or row.attempts >= MAX_CODE_ATTEMPTS:
-        return respond(400, fail("Invalid or expired code"))
+        return respond(400, msg("Invalid or expired code"))
 
     if not hmac.compare_digest(row.code.encode(), body.code.encode()):
         await db.execute(
@@ -392,7 +381,7 @@ async def verify_login(
             .values(attempts=LoginCode.attempts + 1)
         )
         await db.commit()
-        return respond(400, fail("Invalid or expired code"))
+        return respond(400, msg("Invalid or expired code"))
 
     try:
         await db.execute(
@@ -417,7 +406,7 @@ async def verify_login(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Verify Login Error", err, False)
+        return internal_error("Verify Login Error", err)
 
     return respond(
         200, _login_success(row.email, issue_token(row.email, settings.jwt_secret))
@@ -443,13 +432,13 @@ async def resend_login_code(
         )
     ).first()
     if row is None:
-        return respond(400, fail("Invalid or expired code"))
+        return respond(400, msg("Invalid or expired code"))
 
     now = datetime.now(UTC)
     if row.used or now > row.expires_at:
-        return respond(400, fail("Invalid or expired code"))
+        return respond(400, msg("Invalid or expired code"))
     if row.resends >= MAX_RESENDS:
-        return respond(429, fail("Too many resend attempts"))
+        return respond(429, msg("Too many resend attempts"))
 
     code = random_code(settings.env)
     try:
@@ -465,7 +454,7 @@ async def resend_login_code(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Resend Code Error", err, False)
+        return internal_error("Resend Code Error", err)
 
     await _send_login_code(db, row.email, code)
     return respond(200, msg("Code resent"))
@@ -478,10 +467,10 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ) -> object:
     if not verify_password(body.current_password, user.password):
-        return respond(401, fail("Current password is incorrect"))
+        return respond(401, msg("Current password is incorrect"))
     password_error = validate_password(body.new_password)
     if password_error:
-        return respond(400, fail(password_error))
+        return respond(400, msg(password_error))
 
     try:
         await db.execute(
@@ -495,15 +484,15 @@ async def change_password(
         await db.commit()
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Change Password Error", err, False)
+        return internal_error("Change Password Error", err)
 
-    return respond(200, {"success": True, "message": "Password changed successfully!"})
+    return respond(200, {"message": "Password changed successfully!"})
 
 
 async def _send_login_code(db: AsyncSession, email: str, code: str) -> None:
     """Queue the 2FA code; the worker delivers it."""
     try:
-        await enqueue_email(db, mail.login_code_email(email, code))
+        db.add(mail.login_code_email(email, code))
         await db.commit()
     except SQLAlchemyError:
         await db.rollback()

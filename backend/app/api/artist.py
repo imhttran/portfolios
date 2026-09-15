@@ -152,9 +152,9 @@ async def save_my_profile(
         await db.refresh(profile)
     except SQLAlchemyError as err:
         await db.rollback()
-        return internal_error("Save Artist Profile Error", err, False)
+        return internal_error("Save Artist Profile Error", err)
 
     return respond(
         200,
-        {"success": True, "message": "Profile saved!", "profile": _serialize(profile)},
+        {"message": "Profile saved!", "profile": _serialize(profile)},
     )

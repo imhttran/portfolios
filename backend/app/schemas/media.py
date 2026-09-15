@@ -26,20 +26,6 @@ class AlbumSummary(CamelModel):
     download_url: str
 
 
-class AlbumDetail(CamelModel):
-    id: int
-    slug: str
-    title: str
-    credit: str | None = None
-    description: str | None = None
-    access: str
-    artist_name: str | None = None
-    artist_slug: str | None = None
-    artist_columns: int | None = None
-    can_download: bool = False
-    download_url: str
-
-
 class PhotoOut(CamelModel):
     id: int
     title: str | None = None

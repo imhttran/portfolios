@@ -317,14 +317,14 @@ async def test_the_ladder_only_reaches_down(client):
         await cleanup(artist_email)
 
 
-async def test_download_is_allowed_before_onboarding_is_done(client):
-    """The downloads are exempt from the profile/password gates."""
+async def test_download_is_allowed_with_a_temporary_password(client):
+    """Downloads are exempt from the password gate."""
     _, artist_id = await _artist(client)
     album_id, photo_id, slug = await _make_album(artist_id=artist_id, access=TIER_FREE)
     email = unique_email()
     try:
         await signup(client, email)
-        token = await login(client, email)  # no profile, no password change
+        token = await login(client, email)
         headers = {"Authorization": f"Bearer {token}"}
 
         response = await client.get(
@@ -337,10 +337,11 @@ async def test_download_is_allowed_before_onboarding_is_done(client):
         )
         assert response.status_code == 200
 
-        # The exemption is scoped to the downloads: a normal route still gates.
+        # A fresh self-signup has no temporary password, so nothing gates it:
+        # it just doesn't have the role to list users.
         response, body = await do_json(client, "GET", "/api/users", token=token)
         assert response.status_code == 403
-        assert body["message"] == "Profile information required"
+        assert body["message"] == "Insufficient permissions"
     finally:
         await _drop_album(album_id)
         await cleanup(email)

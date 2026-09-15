@@ -100,7 +100,6 @@ async def test_artist_saves_and_the_public_reads_it_back(client):
             client, "PUT", "/api/artist/profile", token=token, json=VALID
         )
         assert response.status_code == 200, body
-        assert body["success"] is True
         assert body["profile"]["displayName"] == "Test Artist"
 
         # The public endpoint now serves it, with no session at all.

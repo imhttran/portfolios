@@ -32,8 +32,9 @@
 - **Subscriptions** — one customer's access to one artist's work, at a level
   (`paid` or `premium`) that names the highest tier it opens, so the ladder only
   reaches down. Per artist, so subscribing to one does not open another's paid
-  work. Granted by an admin. No payment provider is wired up; a webhook would
-  write the same row
+  work. Granted from the CLI (`python -m app.cli set-subscription`), which is
+  also how roles are granted: no payment provider is wired up, so a human writes
+  the row deliberately. When one is, it writes the same row
 - **Image pipeline** — uploads become three files via Pillow: the original (what
   a download hands over) plus a preview and thumbnail that pages actually load,
   so a public gallery never streams full-resolution work. EXIF rotation is baked
@@ -47,8 +48,10 @@
   of photos in place: it copies the originals into the storage layout, generates
   the previews and thumbnails, and creates the photo rows. Idempotent, and it
   reports non-images (RAW, video) rather than guessing at them
-- **Onboarding gates** — forced password change and required profile block
-  API access until completed
+- **Forced password change** — an account created by an admin (temporary
+  password) can reach `/api/me`, `/api/change-password`, and the downloads, and
+  nothing else until the password is changed. There is no second gate: nothing
+  asks a user for a registration form, and the name on `/profile` is optional
 - **Admin user management** — create, delete, verify/unverify, change role,
   and trigger password resets from the dashboard
 - **Email queue** — Postgres-backed queue with a bounded-retry worker; logs to

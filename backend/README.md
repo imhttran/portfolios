@@ -27,13 +27,13 @@ backend/
 ├── app/
 │   ├── main.py            ASGI app, lifespan, session-renewal middleware
 │   ├── config.py          env loading and the Settings dataclass
-│   ├── cli.py             the set-role command
+│   ├── cli.py             set-role, set-subscription, media housekeeping
 │   ├── api/               routers and shared dependencies
 │   │   ├── deps.py        get_current_user and role gating
 │   │   ├── responses.py   response shapes and the ApiError type
 │   │   ├── auth.py        public auth, /api/me, change-password
 │   │   ├── users.py       staff/admin user management
-│   │   └── profile.py     registration profile
+│   │   └── profile.py     a user's own name (optional)
 │   ├── models/            SQLAlchemy models (users, profiles, queue, 2FA)
 │   ├── schemas/           Pydantic request/response schemas
 │   ├── services/          security, roles, validation, mail, queue, seeds
@@ -107,7 +107,7 @@ Public, no session. `GET /api/media/albums`, `GET /api/media/albums/{slug}`,
 /api/artists`, `GET /api/artists/{slug}`.
 
 Signed in, any role. `GET /api/me`, `GET /api/profile`, `POST /api/profile`,
-`POST /api/change-password`, `GET /api/subscriptions/mine`.
+`POST /api/change-password`.
 
 Artist. `GET /api/artist/profile/mine`, `PUT /api/artist/profile`, and the six
 management routes under `/api/manage/*` (list/create/edit/delete an album,
@@ -120,17 +120,27 @@ and premium need a subscription at that level.
 Staff and admin. `GET /api/users`, `POST /api/users`, `DELETE
 /api/users/{id}`, `PATCH /api/users/{id}/verification`, `PATCH
 /api/users/{id}/role`, `POST /api/users/{id}/resend-verification`, `POST
-/api/users/{id}/reset-password`, `GET /api/subscriptions`, `POST
-/api/subscriptions`, `DELETE /api/subscriptions/{id}`.
+/api/users/{id}/reset-password`. Subscriptions are granted from the CLI, not
+over HTTP - see below.
 
 A `GET /health` endpoint exists for readiness checks.
 
 ## CLI
 
-Out-of-band tooling lives in `app/cli.py`: `set-role`, `import-album` (a folder
-of photos, read in place), `prune-media` (files nothing points at) and
-`prune-db` (rows that are dead by definition). See the root README for the
-last three.
+Out-of-band tooling lives in `app/cli.py`: `set-role`, `set-subscription` and
+`revoke-subscription` (who may download whose paid work), `import-album` (a
+folder of photos, read in place), `prune-media` (files nothing points at),
+`prune-db` (rows that are dead by definition), `restore-media` and
+`relayout-media`. See the root README for the media ones.
+
+```bash
+set-role you@email.com artist
+set-subscription client@example.com you@email.com --level premium
+```
+
+Roles and subscriptions are CLI-only so there is no self-service escalation and
+no HTTP surface for a payment provider to be bolted onto later - when one
+arrives, it writes the same `subscriptions` row.
 
 ## Roles
 

@@ -19,7 +19,6 @@ from app.api import (
     manage,
     media,
     profile,
-    subscriptions,
     users,
 )
 from app.api.responses import ApiError, respond
@@ -27,15 +26,7 @@ from app.config import get_settings, load_env_files
 from app.db.session import create_all, dispose_engine, get_sessionmaker
 from app.services.email_queue import email_worker
 from app.services.security import renew_token_if_due
-from app.services.seeds import (
-    seed_dev_admin,
-    seed_dev_artist,
-    seed_dev_artist_two,
-    seed_dev_client,
-    seed_dev_gallery,
-    seed_dev_restore_media,
-    seed_dev_subscribers,
-)
+from app.services.seeds import seed_dev_all
 
 # Load .env/.env.dev before anything reads Settings.
 load_env_files()
@@ -45,15 +36,8 @@ load_env_files()
 async def lifespan(app: FastAPI):
     settings = get_settings()
     await create_all()
-    await seed_dev_admin(settings, get_sessionmaker())
-    await seed_dev_client(settings, get_sessionmaker())
-    await seed_dev_artist(settings, get_sessionmaker())
-    await seed_dev_artist_two(settings, get_sessionmaker())
-    await seed_dev_gallery(settings, get_sessionmaker())
-    await seed_dev_subscribers(settings, get_sessionmaker())
-    # Last: it needs the artists to exist, and it rebuilds work the seeds don't
-    # otherwise know about. See the docstring - this is what survives a reset.
-    await seed_dev_restore_media(settings, get_sessionmaker())
+    # Order-sensitive; see seed_dev_all.
+    await seed_dev_all(settings, get_sessionmaker())
 
     worker = asyncio.create_task(email_worker(settings, get_sessionmaker()))
     try:
@@ -103,7 +87,6 @@ app.include_router(media.router)
 app.include_router(manage.router)
 app.include_router(artist.router)
 app.include_router(artists.router)
-app.include_router(subscriptions.router)
 app.include_router(users.router)
 app.include_router(profile.router)
 

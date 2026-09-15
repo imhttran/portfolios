@@ -18,8 +18,6 @@ import { PageTitle } from "@/components/PageTitle";
 import { SignOut } from "@/components/SignOut";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const USERS_PER_PAGE = 10;
-
 const yesNo = (value: boolean) => (value ? "Yes" : "No");
 
 type MeUser = {
@@ -28,7 +26,6 @@ type MeUser = {
   role: string;
   emailVerified: boolean;
   mustChangePassword?: boolean;
-  hasProfile?: boolean;
 };
 
 type UserRow = {
@@ -38,14 +35,7 @@ type UserRow = {
   emailVerified: boolean;
 };
 
-type SortKey = "email" | "role" | "emailVerified";
-type SortDir = "asc" | "desc";
-
-const SORTABLE_COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "email", label: "Email" },
-  { key: "role", label: "Role" },
-  { key: "emailVerified", label: "Verified" },
-];
+const COLUMNS = ["Email", "Role", "Verified"];
 
 type TableAction = { label: string; onClick: () => void; danger?: boolean };
 
@@ -137,11 +127,6 @@ export default function DashboardPage() {
   const [me, setMe] = useState<MeUser | null>(null);
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [usersFailed, setUsersFailed] = useState(false);
-  // Sort column/direction + current page survive across fetches so a
-  // mutation's refresh doesn't reset the admin's place in the list.
-  const [sortBy, setSortBy] = useState<SortKey>("email");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [page, setPage] = useState(1);
   const addUserDetailsRef = useRef<HTMLDetailsElement>(null);
 
   const isAdmin = me ? hasRole(me.role, "admin") : false;
@@ -198,12 +183,6 @@ export default function DashboardPage() {
           window.location.href = "/change-password";
           return;
         }
-        // New accounts (self-signup or admin-created) start with no profile —
-        // send them to fill it in before anything else in the dashboard loads.
-        if (!user.hasProfile) {
-          window.location.href = "/profile";
-          return;
-        }
         setMe(user);
 
         // Only staff/admin can list users at all (backend enforces this too).
@@ -214,40 +193,8 @@ export default function DashboardPage() {
     })();
   }, [loadUsers]);
 
-  // Sorting and paging just re-run against the in-memory list; only a real
-  // mutation re-fetches (via loadUsers), preserving the current view.
-  const sorted = users
-    ? [...users].sort((a, b) => {
-        const cmp = String(a[sortBy]).localeCompare(
-          String(b[sortBy]),
-          undefined,
-          { numeric: true },
-        );
-        return sortDir === "asc" ? cmp : -cmp;
-      })
-    : null;
-
-  const pageCount = Math.max(
-    1,
-    Math.ceil((sorted?.length ?? 0) / USERS_PER_PAGE),
-  );
-  const currentPage = Math.min(page, pageCount);
-  const pageUsers = sorted
-    ? sorted.slice(
-        (currentPage - 1) * USERS_PER_PAGE,
-        currentPage * USERS_PER_PAGE,
-      )
-    : [];
-
-  const toggleSort = (key: SortKey) => {
-    if (sortBy === key) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(key);
-      setSortDir("asc");
-    }
-    setPage(1);
-  };
+  // The list is short by design (a portfolio's staff), so it renders in the
+  // order the API returns it.
 
   // Reads the stored token on every call (not a stale React state) so a
   // renewed JWT from a previous response is used by the next one.
@@ -271,9 +218,6 @@ export default function DashboardPage() {
       if (result) {
         form.reset();
         if (addUserDetailsRef.current) addUserDetailsRef.current.open = false;
-        setSortBy("email");
-        setSortDir("asc");
-        setPage(1);
         await loadUsers(authToken);
       }
     })();
@@ -304,6 +248,9 @@ export default function DashboardPage() {
           ) : null}
           <a className="header-link" href="/gallery">
             Gallery
+          </a>
+          <a className="header-link" href="/profile">
+            Your name
           </a>
           <ThemeToggle />
           <SignOut className="logout-link" />
@@ -340,19 +287,8 @@ export default function DashboardPage() {
               <table className="user-table">
                 <thead>
                   <tr>
-                    {SORTABLE_COLUMNS.map((column) => (
-                      <th
-                        key={column.key}
-                        className="sortable"
-                        onClick={() => toggleSort(column.key)}
-                      >
-                        {column.label}
-                        {sortBy === column.key
-                          ? sortDir === "asc"
-                            ? " ▲"
-                            : " ▼"
-                          : ""}
-                      </th>
+                    {COLUMNS.map((label) => (
+                      <th key={label}>{label}</th>
                     ))}
                     <th style={isAdmin ? undefined : { display: "none" }}>
                       Actions
@@ -365,7 +301,7 @@ export default function DashboardPage() {
                       <td colSpan={4}>Failed to load users.</td>
                     </tr>
                   ) : (
-                    pageUsers.map((user) => {
+                    (users ?? []).map((user) => {
                       const actions: TableAction[] = [];
                       if (!user.emailVerified) {
                         actions.push({
@@ -469,27 +405,6 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-            {pageCount > 1 && (
-              <div className="user-pager">
-                <button
-                  type="button"
-                  disabled={currentPage <= 1}
-                  onClick={() => setPage(currentPage - 1)}
-                >
-                  Prev
-                </button>
-                <span>
-                  Page {currentPage} of {pageCount}
-                </span>
-                <button
-                  type="button"
-                  disabled={currentPage >= pageCount}
-                  onClick={() => setPage(currentPage + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
