@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import select, update
 
 from app.db.session import get_sessionmaker
-from app.models import User
+from app.models import User, UserDevice
 from app.services.security import issue_token, issue_token_with_ttl
 from tests.helpers import (
     cleanup,
@@ -115,6 +117,140 @@ async def test_two_factor_login(client):
         assert body["token"]
     finally:
         await cleanup(email)
+
+
+async def test_a_lapsed_device_has_to_verify_again(client):
+    """Trust expires. A device trusted forever is how a stolen laptop stays a way in."""
+    email = unique_email()
+    try:
+        await signup(client, email)
+        await login(client, email, device="lapsing")
+
+        async with get_sessionmaker()() as session:
+            await session.execute(
+                update(UserDevice).values(
+                    expires_at=datetime.now(UTC) - timedelta(minutes=1)
+                )
+            )
+            await session.commit()
+
+        # The same device is no longer trusted, so 2FA comes back.
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login",
+            json={"email": email, "password": "Valid123!", "deviceId": "lapsing"},
+        )
+        assert response.status_code == 200, body
+        assert body["twoFactorRequired"] is True
+    finally:
+        await cleanup(email)
+
+
+async def test_verifying_again_slides_the_trust_forward(client):
+    from tests.helpers import fetch_login_code
+
+    email = unique_email()
+    try:
+        await signup(client, email)
+        await login(client, email, device="sliding")
+
+        async with get_sessionmaker()() as session:
+            near = await session.scalar(
+                select(UserDevice.expires_at).where(UserDevice.device_id == "sliding")
+            )
+            # Push it close to lapsing without lapsing it.
+            await session.execute(
+                update(UserDevice).values(
+                    expires_at=datetime.now(UTC) + timedelta(minutes=5)
+                )
+            )
+            await session.commit()
+
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login",
+            json={"email": email, "password": "Valid123!", "deviceId": "sliding"},
+        )
+        # Still trusted, so it skips 2FA - but the clock is nearly out.
+        assert body.get("twoFactorRequired") is not True, body
+
+        # Force a verification, which should push the expiry out again.
+        async with get_sessionmaker()() as session:
+            await session.execute(
+                update(UserDevice).values(
+                    expires_at=datetime.now(UTC) - timedelta(minutes=1)
+                )
+            )
+            await session.commit()
+
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login",
+            json={"email": email, "password": "Valid123!", "deviceId": "sliding"},
+        )
+        pending = body["token"]
+        code = await fetch_login_code(email)
+        response, body = await do_json(
+            client,
+            "POST",
+            "/api/login/verify",
+            json={"token": pending, "code": code, "deviceId": "sliding"},
+        )
+        assert response.status_code == 200, body
+
+        async with get_sessionmaker()() as session:
+            after = await session.scalar(
+                select(UserDevice.expires_at).where(UserDevice.device_id == "sliding")
+            )
+
+        assert after > near, (near, after)
+        assert after > datetime.now(UTC) + timedelta(days=20)
+    finally:
+        await cleanup(email)
+
+
+async def test_two_users_can_each_trust_the_same_browser(client):
+    """device_id is unique per user, not globally: two people share a laptop."""
+    first = unique_email("first")
+    second = unique_email("second")
+    try:
+        for email in (first, second):
+            await signup(client, email)
+            await login(client, email, device="shared-browser")
+
+        async with get_sessionmaker()() as session:
+            rows = (
+                (
+                    await session.execute(
+                        select(UserDevice.user_id).where(
+                            UserDevice.device_id == "shared-browser"
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+        assert len(rows) == 2, rows
+
+        # And each still skips 2FA on its own account.
+        for email in (first, second):
+            response, body = await do_json(
+                client,
+                "POST",
+                "/api/login",
+                json={
+                    "email": email,
+                    "password": "Valid123!",
+                    "deviceId": "shared-browser",
+                },
+            )
+            assert body.get("twoFactorRequired") is not True, (email, body)
+    finally:
+        await cleanup(first)
+        await cleanup(second)
 
 
 async def test_session_slides_while_active(client):
