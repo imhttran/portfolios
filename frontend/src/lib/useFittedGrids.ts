@@ -2,14 +2,14 @@
 
 import { useEffect, type RefCallback } from "react";
 
-// An album is a sheet sized to the frame it is shown in. A fixed column count
-// can't do that: four photographs leave half a window empty, twenty-seven run
-// on for two windows. So the grid works out its own columns from the space it
-// actually has - see bestLayout() for the arithmetic.
+// An album is a sheet that spans the frame it is shown in. The sheet's width
+// sets the size of a frame, and the column count then decides how many rows the
+// album runs to - so an album is as tall as its own count makes it, on the full
+// width of the page, rather than being squeezed until one window can hold it.
 //
-// The one fixed thing is the artist's ceiling, data-max-cols: how dense their
-// sheets are allowed to get. It caps the count the grid would otherwise choose,
-// so an artist who wants two across keeps two across on every window.
+// Two things choose the count: the artist's ceiling (data-max-cols), and the
+// window, which the grid reads to pick the count whose rows come nearest to
+// filling it. See bestLayout() for the arithmetic.
 //
 // The numbers come from the browser (viewport height, element widths), which
 // the server render cannot know, so the server sends the CSS fallback and this
@@ -19,25 +19,18 @@ import { useEffect, type RefCallback } from "react";
 // contact sheet rather than as differently shaped pictures.
 const CROP = 2 / 3;
 
-// A photograph never gets narrower than this. An album that cannot be shown
-// within it keeps the plain width-driven layout and scrolls, rather than
-// turning into confetti. It has to stay low enough that a laptop window can
-// still fit a whole roll - at 140px, twenty-seven photographs stopped fitting
-// a 1280-wide window at all.
+// A frame never gets narrower than this, so a column count that would take it
+// below this is not offered at all - which is what stops a narrow window from
+// turning a sheet into confetti. If no count clears it, the album keeps the
+// plain width-driven grid instead.
 const MIN_CELL = 110;
 
 // The 1px hairlines between cells are the grid's gap, so they count.
 const GAP = 1;
 
-// Two layouts whose heights are within this much of each other count as equal,
-// which leaves the tie to be broken on photograph size instead. Without it a
-// layout that is a pixel closer to the frame wins over one with visibly larger
-// photographs.
-const SAME = 0.02;
+type Layout = { cols: number; height: number };
 
-type Layout = { cols: number; width: number; height: number };
-
-function layoutWithin(
+function bestLayout(
   count: number,
   width: number,
   available: number,
@@ -55,21 +48,15 @@ function layoutWithin(
 
   const candidates: Layout[] = [];
   for (let cols = min; cols <= max; cols++) {
-    const rows = Math.ceil(count / cols);
-    // The cell width at which this many rows fills the frame exactly. Solving
-    // from the height, rather than from the width, is what lets an album fill a
-    // frame: a grid that is always as wide as the sheet cannot do it, so it is
-    // allowed to come in from the edges and sit centred instead.
-    const exact =
-      inset + (available - (rows - 1) * GAP - rows * chrome) / (rows * CROP);
-    // Never wider than its row can hold, never narrower than legible.
-    const cell = Math.min(exact, (width - (cols - 1) * GAP) / cols);
+    // The cell that makes this many columns span the sheet exactly. Solving
+    // from the width is what puts the album edge to edge; the count then decides
+    // how many rows that makes, and so how tall the album runs.
+    const cell = (width - (cols - 1) * GAP) / cols;
     if (cell < MIN_CELL) continue;
 
-    const usedWidth = cols * cell + (cols - 1) * GAP;
+    const rows = Math.ceil(count / cols);
     candidates.push({
       cols,
-      width: usedWidth,
       // A cell is not all photograph: the frame's own side padding narrows the
       // image, which shortens the row by that much again.
       height: rows * (chrome + (cell - inset) * CROP) + (rows - 1) * GAP,
@@ -78,31 +65,15 @@ function layoutWithin(
 
   if (!candidates.length) return null;
 
-  // Fill the frame; where two layouts do that equally well, take the wider one,
-  // because that is the one with the larger photographs in it.
-  const tallest = Math.max(...candidates.map((c) => c.height));
-  const close = candidates.filter(
-    (c) => c.height >= tallest - available * SAME,
-  );
-  return close.reduce((a, b) => (b.width > a.width ? b : a));
-}
-
-// The artist's ceiling is a preference for how dense their sheets read, not a
-// hard limit: a ceiling can be unreachable. Four across a roll of twenty-seven
-// needs seven rows, and seven rows in one window leaves the frames under the
-// legible size - so that album falls back to the columns the grid would have
-// chosen on its own, because an album that fills the window is the point.
-function bestLayout(
-  count: number,
-  width: number,
-  available: number,
-  chrome: number,
-  inset: number,
-  cap: number | null,
-): Layout | null {
-  const capped = layoutWithin(count, width, available, chrome, inset, cap);
-  if (capped || cap === null) return capped;
-  return layoutWithin(count, width, available, chrome, inset, null);
+  // The count whose rows land nearest the window: the tallest that still fits,
+  // or - when none does, because the artist's ceiling keeps the columns few and
+  // the rows therefore tall - the shortest of them, so the album runs on as
+  // little as the ceiling allows.
+  const fits = candidates.filter((c) => c.height <= available);
+  if (fits.length) {
+    return fits.reduce((a, b) => (b.height > a.height ? b : a));
+  }
+  return candidates.reduce((a, b) => (b.height < a.height ? b : a));
 }
 
 function fitOne(grid: HTMLElement): void {
@@ -125,17 +96,24 @@ function fitOne(grid: HTMLElement): void {
   const style = getComputedStyle(sheet);
   const head = sheet.querySelector<HTMLElement>(".sheet-head");
   const credit = sheet.querySelector<HTMLElement>(".sheet-credit");
-  // The frame to fill is the browser window: from just under the album's own
-  // heading down to the bottom edge. The sheet's bottom padding is deliberately
-  // not subtracted - the grid reaches the edge and that padding falls below the
-  // fold, which is what separates one album from the next.
+  // How tall the album is allowed to be before it runs past the window: from
+  // just under its own heading down to the bottom edge. Nothing here decides the
+  // frame size - the width does that - so this only steers which column count is
+  // chosen.
   const available =
     window.innerHeight -
     parseFloat(style.paddingTop) -
     (head?.getBoundingClientRect().height ?? 0) -
     (credit?.getBoundingClientRect().height ?? 0);
 
-  const width = grid.clientWidth;
+  // The sheet's own content column, which is the width the grid spans. Measured
+  // from the sheet rather than from the grid: a grid carrying a max-width from
+  // an earlier fit would otherwise report that narrower width back and never
+  // grow out to the frame again.
+  const width =
+    sheet.clientWidth -
+    parseFloat(style.paddingLeft) -
+    parseFloat(style.paddingRight);
   if (width <= 0 || available <= 0) return;
 
   // The artist's ceiling, read off the element so a grid carries its own limit
@@ -144,8 +122,8 @@ function fitOne(grid: HTMLElement): void {
 
   const layout = bestLayout(count, width, available, chrome, inset, cap);
   if (!layout) {
-    // No layout is legible in this frame even without a ceiling, so hand the
-    // album back to the plain width-driven grid and let it scroll.
+    // No layout is legible in this frame - the frames would be narrower than a
+    // thumbnail - so hand the album back to the plain width-driven grid.
     grid.style.removeProperty("--cols");
     grid.style.removeProperty("max-width");
     delete grid.dataset.fit;
@@ -153,7 +131,9 @@ function fitOne(grid: HTMLElement): void {
   }
 
   grid.style.setProperty("--cols", String(layout.cols));
-  grid.style.setProperty("max-width", `${Math.round(layout.width)}px`);
+  // No max-width: the grid is the width of the sheet, which is the whole point.
+  // A stale one from an earlier fit would hold it in from the edges.
+  grid.style.removeProperty("max-width");
   grid.dataset.fit = "on";
 }
 

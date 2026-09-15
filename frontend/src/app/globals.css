@@ -573,15 +573,14 @@ body {
     border: var(--rule);
 }
 
-/* The column count comes from lib/useFittedGrids, which measures the frame the
-   album is in - so a four-photo album fills the window instead of leaving half
-   of it empty, and a twenty-seven-photo album stops running on for two. A grid
-   that is always as wide as the sheet can't fill a tall frame, so it may come
-   in from the edges and centre itself in what's left. Until that lands (and for
-   a visitor with no JS) the width alone decides, above. */
+/* The column count comes from lib/useFittedGrids, which reads the artist's
+   ceiling and the window to pick it - so a four-photo album isn't stretched
+   across four columns of empty space, and a roll of twenty-seven doesn't crawl
+   off the bottom of the screen. The sheet is always the full width of the page;
+   the count decides how many rows that makes. Until the count lands (and for a
+   visitor with no JS) the width alone decides, above. */
 .sheet-grid[data-fit] {
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-    margin-inline: auto;
 }
 
 .frame {
