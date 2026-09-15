@@ -557,17 +557,17 @@ body {
 }
 
 /* ==========================================================================
-   Email icon
+   Glyph links
 
-   The address is an envelope rather than a line of type, so it reads as an
-   action instead of as content. Sized in em, so it scales with the type around
+   An address or a handle is a glyph rather than a line of type, so it reads as
+   an action instead of as content. Sized in em, so it scales with the type around
    it and matches it - 15px in the meta row, 15px in the footer - and stroked
    rather than filled, which is the only way to draw it and stay on this page.
    ========================================================================== */
-.email-link {
+.icon-link {
     display: inline-flex;
     align-items: center;
-    /* Sits the envelope on the text's own baseline: an inline-flex box floats
+    /* Sits the glyph on the text's own baseline: an inline-flex box floats
        otherwise, and would ride high next to the label. */
     vertical-align: -0.15em;
     color: var(--text-muted);
@@ -575,7 +575,7 @@ body {
     transition: color 150ms;
 }
 
-.email-link:hover {
+.icon-link:hover {
     color: var(--text-color);
 }
 

@@ -14,7 +14,7 @@ export function EmailLink({
 }) {
   return (
     <a
-      className="email-link"
+      className="icon-link"
       href={`mailto:${address}`}
       title={address}
       aria-label={name ? `Email ${name}` : address}

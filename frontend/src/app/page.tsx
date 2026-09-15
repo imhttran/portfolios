@@ -7,6 +7,7 @@ import { useAlbumIndex } from "@/lib/usePortfolio";
 import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { EmailLink } from "@/components/EmailLink";
+import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
 
@@ -145,7 +146,12 @@ export default function PortfolioPage() {
         </span>
         <span>
           <EmailLink address={copy.email} name={copy.name} />
-          {copy.instagram ? <> · {copy.instagram}</> : null}
+          {copy.instagram ? (
+            <>
+              {" · "}
+              <InstagramLink handle={copy.instagram} name={copy.name} />
+            </>
+          ) : null}
         </span>
         <span>
           © {new Date().getFullYear()} {copy.name}. All rights reserved.

@@ -8,6 +8,7 @@ import { AlbumIndex } from "@/components/AlbumIndex";
 import { SheetNote } from "@/components/AlbumSheet";
 import { BackToTop } from "@/components/BackToTop";
 import { EmailLink } from "@/components/EmailLink";
+import { InstagramLink } from "@/components/InstagramLink";
 import { PageTitle } from "@/components/PageTitle";
 import { SiteBar } from "@/components/SiteBar";
 
@@ -113,7 +114,15 @@ export default function ArtistPage({
             address={artist?.contactEmail ?? SITE.email}
             name={artist?.displayName ?? SITE.name}
           />
-          {artist?.instagram ? <> · {artist.instagram}</> : null}
+          {artist?.instagram ? (
+            <>
+              {" · "}
+              <InstagramLink
+                handle={artist.instagram}
+                name={artist?.displayName ?? SITE.name}
+              />
+            </>
+          ) : null}
           {" · "}
           <a href={LOGIN_PATH}>Sign in</a>
         </span>

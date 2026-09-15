@@ -113,6 +113,7 @@ _DEV_PROFILE = {
     "bio": "Placeholder. Say who you are, what you make, and who you make it for.",
     "location": "Austin, TX",
     "contact_email": "tom.tran@email.com",
+    "instagram": "ethan.uncurated",
     # Two across, uniformly. The design reference this site is built on lays its
     # project archive out as a flat two-up grid of fixed-ratio tiles - one column
     # count, one tile size, for every entry - and that sameness is what makes it
@@ -179,7 +180,8 @@ _DEV_ARTIST2_PROFILE = {
     ),
     "location": "Sacramento, CA",
     "contact_email": "ted@example.com",
-    "instagram": "@tednguy",
+    # No leading @: the handle is stored clean and the glyph's title adds one.
+    "instagram": "tednguy",
     # Two across, matching Ethan: one column count for the whole site is what
     # makes the sheets read as one publication rather than two. The cost is real
     # and worth knowing before anyone raises this again - Ted's albums are 24, 24
