@@ -119,12 +119,14 @@ Nothing is blocking. Open items are only things to decide, not bugs:
   matched nothing. Two were fixed this way (the `Add photos` label, the lightbox
   Download button with no `aria-label`); a clean take prints none.
 
-- **`CLAUDE.md` is deleted in the working tree** (`git status` shows ` D CLAUDE.md`).
-  Still in git — `git checkout -- CLAUDE.md` restores it. Left alone in case the
-  deletion was deliberate.
-- **Nothing here is committed.** `demo/` sources, `.gitignore`, and this file are all
-  uncommitted; `.gitignore` was changed to track the four demo sources while ignoring
-  generated media.
+- **`CLAUDE.md` has been removed.** Its commands and migration gotchas are covered by
+  `README.md` and, in more detail, `backend/README.md` (which documents the scratch
+  database / `alembic stamp head` workflow in full); the agent config lives in `.agent/`.
+  Nothing unique was lost — don't recreate it.
+- **Everything is committed and pushed.** The demo sources, `.gitignore`, `README.md` and
+  this file are on `main`. `.gitignore` tracks six demo sources (`demo.config.json`,
+  `record.cjs`, `scenes.json`, `NOTES.md`, `demo-plan.md`, `make-workflow.py`) and
+  ignores all generated media.
 - Ethan's four albums are grey placeholder gradients (Ted's are real photographs,
   which is why the client/premium scenes use Ted's _Studio Selects_). Importing real
   images via `app/cli.py import-album` and re-running `driver.mjs all` would improve
