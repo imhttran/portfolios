@@ -1,8 +1,9 @@
-# python-template
+# portfolios
 
-Full-stack auth template: **Next.js → FastAPI → PostgreSQL**. The browser only
-ever talks to Next.js; the FastAPI backend is proxied server-side and never
-exposed directly.
+A photo portfolio that doubles as a client delivery tool: **Next.js → FastAPI →
+PostgreSQL**. Artists own their pages and albums; what a visitor can download depends
+on their subscription tier. The browser only ever talks to Next.js; the FastAPI backend
+is proxied server-side and never exposed directly.
 
 ```
 Browser
