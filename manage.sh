@@ -19,7 +19,7 @@ BACKEND_START_TRIES=30
 FRONTEND_START_TRIES=20
 
 # Service logs land at $LOG_BASE-<slug>.log.
-LOG_BASE=/tmp/python-template
+LOG_BASE=/tmp/portfolios
 
 # ---- python ----
 

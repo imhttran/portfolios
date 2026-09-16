@@ -219,7 +219,7 @@ Everything here was hit for real in this repo.
 | `premium pre-auth failed, landed on …/login?email=…`                            | Pre-hydration submit. Frontend was still compiling — re-run; `up` waits for a 200 but the first compile is lazy. |
 | `browserType.launch: Executable doesn't exist at …chromium_headless_shell-1243` | Missing `channel: 'chrome'`, or Chrome isn't installed.                                                          |
 | `playwright not found`                                                          | `driver.mjs deps`. The driver sets `NODE_PATH` to the cache dir for the recorder.                                |
-| `app is not up -> driver.mjs up`                                                | Frontend/backend not listening. Check `/tmp/python-template-backend.log` and `-frontend.log`.                    |
+| `app is not up -> driver.mjs up`                                                | Frontend/backend not listening. Check `/tmp/portfolios-backend.log` and `-frontend.log`.                         |
 | `postgres is down`                                                              | `brew services start postgresql@16`.                                                                             |
 | `RUNS PAST END OF VIDEO` from mix                                               | A scene's narration is longer than its screen time. Update `AUD` in `record.cjs` and re-record.                  |
 | Backend starts then exits                                                       | Almost always Postgres. `pg_isready` should say `accepting connections`.                                         |

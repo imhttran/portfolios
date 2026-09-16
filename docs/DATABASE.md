@@ -30,8 +30,8 @@ createdb db_portfolios_test            # only needed to run the integration test
 **Option 2 — throwaway instance (no service installed): lost on reboot**
 
 ```bash
-initdb -D /tmp/python-template-pg -A trust
-pg_ctl -D /tmp/python-template-pg -l /tmp/python-template-pg.log start
+initdb -D /tmp/portfolios-pg -A trust
+pg_ctl -D /tmp/portfolios-pg -l /tmp/portfolios-pg.log start
 psql -d postgres -c "CREATE USER postgres WITH PASSWORD 'postgres' SUPERUSER;"
 createdb db_portfolios -U postgres
 ```
