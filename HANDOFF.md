@@ -1,124 +1,142 @@
-# Handoff — real migrations + DB-backed content, all shipped
+# Handoff — demo video + demo tooling consolidation: DONE
 
 ## Goal
 
-Follow-up work after the earlier branding pass: replace the backend's
-`create_all()`-only schema management with real Alembic migrations, then use
-that to move site content (About section, footer contact info) out of
-hardcoded frontend files and into the database where artists can edit it
-themselves in `/studio`.
+Two things, both finished:
 
-## Current progress
+1. Produce a narrated demo video of the portfolios app.
+2. Stop having two overlapping demo skills. One skill that works for **this**
+   project and any future one, with nothing app-specific baked into it.
 
-**Everything is committed and pushed to `origin/main` (HEAD `b870749`).**
-Working tree is clean except `HANDOFF.md` itself, which stays untracked (it
-was already untracked before this session started, and stays that way by
-design — it's a scratch handoff doc, not repo content).
+## Status: shipped
 
-Commits from this session, oldest first:
+`demo/demo.mp4` — **224.4s (3.7 min), 22 MB**, 1920x1080, H.264/AAC, 14 scenes. Inside
+the skill's 3–5 minute target. Narration is OpenAI TTS (`gpt-4o-mini-tts`, voice
+`ash`), generated per scene. **Tom has listened to it and approved the voice** — that
+is settled, don't re-litigate it or re-sample voices.
 
-- `ffceb21` — **Replaced `create_all` with real Alembic migrations.**
-  `alembic init -t async migrations` in `backend/`, wired `migrations/env.py`
-  to the app's own `Settings.database_url` / `Base.metadata` (no second
-  connection string to maintain). Generated the initial migration
-  (`9416456c0fd7`) against a scratch empty DB so it contains real `CREATE
-  TABLE` statements, then `alembic stamp head` on the real dev DB. `app/main.py`
-  and `app/cli.py` now call `run_migrations()` (`app/db/session.py`) instead
-  of `create_all()` — runs `alembic upgrade head` via `asyncio.to_thread`
-  since the async `env.py` drives its own event loop. `create_all()` still
-  exists but is test-only now (ephemeral schema, rebuilt every session).
-- `404ad84` — **Moved the About section into the DB.** Added
-  `ArtistProfile.about` (`Text`, blank-line-separated paragraphs — one column
-  rather than a second table for a list of strings) via a real Alembic
-  migration (`34c70f87e834`), generated and applied the way the tooling above
-  is meant to be used. Wired through `ArtistProfileInput`/`Out`,
-  `/api/artist/profile` (own row) and `/api/artists/{slug}` (public). Backfilled
-  the two existing seeded rows (Ethan, Ted) via a one-off `asyncpg` script,
-  since seeding only inserts on an empty table. Frontend: `ABOUT_MORE` (a
-  static per-slug map added earlier this same day) is gone; `site.ts` now has
-  `SITE.about` (fallback string) + `splitParagraphs()`, and the About section
-  on both the homepage and `/artist/[slug]` renders whenever `about` is
-  non-empty rather than a hardcoded slug check. `/studio` gained an About
-  textarea (renamed the old `bio` field's label from "About" to "Bio" since
-  two fields can't both be called that).
-- `10d08e3` — Fixed the header icon (`/icon.png`) being gated on
-  `artist.slug === SITE.slug`, so Ted's page silently had no icon at all. It's
-  one site-wide icon today, not a per-artist avatar, so the gate was just
-  removed.
-- `b870749` — **Consolidated the site footer + "Client access" label.** Four
-  pages (`/`, `/artist/[slug]`, `/gallery`, `/album/[slug]`) each had their own
-  copy-pasted footer JSX that had drifted: gallery/album were missing
-  Instagram and "All rights reserved."; the album page **always** showed the
-  site's own email regardless of whose album it was (a real bug — visiting one
-  of Ted's albums would show "Ted Nguy" next to Ethan's email link). Fixed by
-  carrying `artistEmail`/`artistInstagram` through `AlbumSummary`
-  (`backend/app/schemas/media.py`, `backend/app/api/media.py`), same pattern as
-  the existing `artistName`/`artistTheme` fields, then extracted
-  `frontend/src/components/SiteFooter.tsx` as the one shared footer. Also
-  deduped the four independent `"Client access"` string literals into
-  `CLIENT_ACCESS_LABEL` in `site.ts`.
+### Architecture (the important part)
+
+There is now exactly **one** skill. Everything app-specific is project data:
+
+```
+~/.claude/skills/demo-video/          <- the only skill, global, app-agnostic
+  SKILL.md                            craft: story, narration style, voice, gates, modes
+  scripts/driver.mjs                  generic orchestration
+  scripts/narrate.sh  mix.py  concat-videos.sh  record-template.js  scenes.example.json
+
+<repo>/demo/                          <- per-project (tracked)
+  demo.config.json                    URLs, services, target length, voice, prereqs
+  record.cjs                          the app-specific recorder
+  scenes.json                         narration text (contract with the recorder)
+  NOTES.md                            this app's logins + gotchas
+  make-workflow.py                    regenerates workflow.json from the new marks
+  (generated, gitignored: demo.mp4, raw.webm, marks.json, audio/,
+   narration.txt, workflow.json, demo-plan.md)
+```
+
+Run from anywhere inside the repo — the driver walks up to find `demo/demo.config.json`:
+
+```bash
+node ~/.claude/skills/demo-video/scripts/driver.mjs doctor
+node ~/.claude/skills/demo-video/scripts/driver.mjs all     # ~5 min
+```
+
+Commands: `doctor deps up down record narrate mix verify all`. `narrate` skips clips
+that already exist (`FORCE=1` regenerates, costs OpenAI calls). `verify` writes
+`/tmp/demo-verify-frame.png` — open it; a green PASS list does not prove the picture
+is right.
+
+**A previous `run-demo-video` project skill was deleted.** Its project-specific half
+lives in `demo/NOTES.md`; its generic half became `scripts/driver.mjs`. Don't
+recreate it — that duplication is what we just removed.
 
 ## What worked
 
-- **Async Alembic template** (`alembic init -t async`) — reuses the existing
-  `asyncpg` engine machinery via `app.db.session.build_engine`, no new sync DB
-  driver dependency.
-- **Scratch DB for autogenerate** — generating a migration against an empty
-  throwaway database (rather than the populated dev DB) is what makes the
-  file contain real `CREATE TABLE`/`ALTER TABLE` statements instead of a
-  no-op diff. `alembic stamp head` afterward reconciles the real DB without
-  replaying the DDL. Used this twice (initial schema, then adding `about`) and
-  it's now the documented pattern in `backend/README.md`.
-- **`asyncio.to_thread` for `alembic upgrade head`** — `command.upgrade()` is
-  sync but its async `env.py` internally calls `asyncio.run()`; that can't
-  nest inside FastAPI's already-running lifespan loop. A worker thread
-  sidesteps it. Verified by booting the real server against the real dev DB.
-- Booting the real dev servers + curling the actual API responses (not just
-  `tsc`/`ruff`/pytest) is what caught the album-email bug — a type-level
-  review would never have flagged it, since the types were all correct; only
-  the *data* was wrong.
+- **Playwright `recordVideo` (CDP screencast), headless, `channel: 'chrome'`.** No
+  macOS Screen Recording permission, captures only the page (desktop windows and
+  personal tabs cannot leak in), real motion rather than a slideshow. `channel:
+'chrome'` also dodges a cached-browser revision mismatch without a ~150MB download.
+- **Marks-based sync.** The recorder emits a wall-clock timestamp per scene into
+  `marks.json`; `mix.py --marks` places each clip exactly there. Un-narrated
+  transitions (logins, navigation) are then free and the voice never drifts.
+- **Persona switching via `localStorage`** — see the trap below.
+- **Config-driven driver.** `demo.config.json` holds base URL, health URL, service
+  start commands, target length, voice. Nothing about portfolios is in the skill.
+- **Generating TTS _before_ finalising the recorder**, then pasting the real clip
+  durations into `AUD` at the top of `record.cjs` so each scene holds long enough.
+- Injected cursor dot + hiding `nextjs-portal` so clicks read and dev chrome is out
+  of frame.
 
-## What didn't work / traps to avoid
+## What didn't work (do not repeat)
 
-- First attempt at the `about` column's `server_default=text("")` produced
-  invalid SQL (`ALTER TABLE ... DEFAULT  NOT NULL`, empty default token).
-  Postgres needs a quoted empty string literal: `text("''")`. Regenerated the
-  migration file from scratch after fixing the model rather than hand-editing
-  the broken one — the original migration was never successfully applied, so
-  nothing needed to be reconciled by deleting and redoing it.
-- `db_portfolios_test` (used for `TEST_DATABASE_URL` pytest runs) already
-  existed before every session in this thread — `createdb` for it reliably
-  errors "already exists" first, and it gets dropped again during cleanup
-  each time. Harmless (tests rebuild schema from scratch every session
-  regardless), but if a future session needs that DB to persist for something
-  else, stop dropping it.
-- Playwright (`mcp__mcp-server-playwright__browser_*`) was locked the entire
-  session by a long-running Chrome process (`mcp-chrome-d2ddf0d`, started
-  outside this conversation, likely another concurrent session) — every
-  `browser_navigate`/`browser_snapshot` call failed with "Browser is already
-  in use." Not killed, since it wasn't confirmed to be mine. All frontend
-  verification this session was done via `tsc --noEmit` + curling the actual
-  API JSON responses instead of a real rendered screenshot. If a fresh session
-  needs an actual visual check, try Playwright first — it may be free by then
-  — and only consider killing that Chrome process after confirming with the
-  user it's not another active session's browser.
-- User explicitly declined a helper script for the one-time
-  scratch-DB-regenerate sequence — asked for it folded into `README.md` as a
-  documented command block instead, since it's rare/one-time. Don't
-  re-propose a script for this later.
+- **Cookie-based persona switching is a silent no-op here.** This app sets **zero
+  cookies**; auth is entirely `localStorage` (`auth_token`, `device_id`). The old
+  `clearCookies()`/`addCookies()` swap changed nothing, so the whole take stayed
+  signed in as admin — and because admin can download anything, the "paid client is
+  locked out" scene showed Download buttons while the narration said "Locked". Fix:
+  capture `storageState().origins[0].localStorage` and replay with
+  `page.evaluate()` on the app origin. **Always assert the persona took effect** with
+  an element only that persona sees.
+- **AppleScript to find the automation window.** `tell application "Google Chrome"`
+  routes to the _user's real Chrome_; `set bounds`/`set index` moved and raised a
+  personal window with no way to restore its geometry. Headless recording removes any
+  reason to touch OS windows. Never do this.
+- **`ffmpeg -f avfoundation` screen capture.** Hangs with zero output when Screen
+  Recording permission is missing; when granted it captures the whole physical
+  display. Strictly worse than page capture.
+- **Blanket `brew install node python3 ffmpeg jq postgresql@16`.** It _upgrades_ on a
+  provisioned machine: node 26.7.0→26.8.2 and simdutf 9.1.0→9.2.0, after which
+  `merve` still linked `libsimdutf.35` and **every `node` call died**. Fix was
+  `brew reinstall merve`. Install only what's actually missing.
+- **`record.js` in this repo** — root `package.json` has `"type": "module"`, so a
+  CommonJS recorder dies with `ReferenceError: require is not defined`. Must be `.cjs`.
+- **Assuming `#email` exists on the Add User form.** Those inputs have `name` but no
+  `id`; with default timeouts the miss cost ~31s of dead air mid-video. Probe real
+  attributes and keep helper timeouts short so bad selectors fail fast.
+- **Admin's `/studio` for the "words on the page" scene** — admin has no artist
+  profile, so the identity fields render blank while the narration describes them.
+  Those scenes use the artist session deliberately.
+- **Stale duration gates.** After the profile moved to 3–5 min, `driver.mjs` still
+  asserted `<= 90s` and would have failed its own check. Gates now read
+  `targetSeconds`/`maxSeconds` from the project config.
 
 ## Next steps
 
-Nothing is blocking or half-done. If the user comes back to this thread,
-open items are things they'd have to explicitly ask for, not bugs:
+Nothing is blocking. Open items are only things to decide, not bugs:
 
-- A `code-review`/`security-review` pass has not been run on any of this
-  session's four commits — worth doing before this goes much further if the
-  user wants a second pass.
-- No actual browser screenshot of the About section or footer changes exists
-  yet (see Playwright note above) — worth doing once the browser lock clears,
-  if the user wants visual confirmation rather than API-level confirmation.
-- Nothing else from the original DB/config audit remains: icon gating and
-  footer/label duplication (the other two items raised) are both done.
-  `THEMES`, grid-column bounds, and `config.py` were explicitly judged fine as
-  code, not DB material.
+- **The take now writes real rows.** Scenes 5–6 create and promote `jordan@mail.com`;
+  scene 9 creates a hidden `Nightfall` album. `clearLeftovers()` removes both off camera
+  before and after the take, and it also runs before the take so a crashed run
+  self-heals. Every persona swap and every write is asserted — if you change those
+  scenes, keep the assertions, because a silent auth no-op in this app still renders a
+  plausible page. See `demo/NOTES.md` → "Writing to the database on camera".
+- **The take's pace is set in two places, and neither is the TTS instructions.** `PAD`
+  in `record.cjs` (trailing quiet after each line) plus a 5% pitch-preserving `atempo`
+  stretch on the clips. `driver.mjs narrate` does not apply the stretch, so a full `all`
+  run reproduces the video but not the shipped audio. See `demo/NOTES.md` → "Pace".
+- **A `[skip moveTo]` in the record log is a bug, not noise.** It means a selector
+  matched nothing. Two were fixed this way (the `Add photos` label, the lightbox
+  Download button with no `aria-label`); a clean take prints none.
+
+- **`CLAUDE.md` is deleted in the working tree** (`git status` shows ` D CLAUDE.md`).
+  Still in git — `git checkout -- CLAUDE.md` restores it. Left alone in case the
+  deletion was deliberate.
+- **Nothing here is committed.** `demo/` sources, `.gitignore`, and this file are all
+  uncommitted; `.gitignore` was changed to track the four demo sources while ignoring
+  generated media.
+- Ethan's four albums are grey placeholder gradients (Ted's are real photographs,
+  which is why the client/premium scenes use Ted's _Studio Selects_). Importing real
+  images via `app/cli.py import-album` and re-running `driver.mjs all` would improve
+  scenes 1, 2 and 12.
+- To use the skill on **another project**: follow "Per-project setup" in
+  `~/.claude/skills/demo-video/SKILL.md` — copy `scripts/record-template.js` to
+  `<repo>/demo/record.cjs`, write `demo.config.json` + `scenes.json`, done. No new
+  skill required.
+
+## Reference
+
+- Project gotchas and dev logins: `demo/NOTES.md`
+- Story, scene table, honest caveats: `demo/demo-plan.md`
+- Craft + pipeline + per-project setup: `~/.claude/skills/demo-video/SKILL.md`
+- App commands: `./manage.sh` (interactive menu; `./manage.sh 1` does **not** work)

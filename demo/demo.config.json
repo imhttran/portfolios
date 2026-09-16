@@ -1,0 +1,29 @@
+{
+  "name": "portfolios",
+  "baseUrl": "http://localhost:3000",
+  "healthUrl": "http://localhost:8080/api/artists",
+  "assetsDir": "demo",
+  "recorder": "demo/record.cjs",
+  "scenes": "demo/scenes.json",
+  "voice": "ash",
+  "resolution": "1920,1080",
+  "targetSeconds": [180, 300],
+  "maxSeconds": 480,
+  "prereqs": ["pg_isready"],
+  "services": [
+    {
+      "name": "backend",
+      "port": 8080,
+      "cwd": "backend",
+      "cmd": "env PORT=8080 .venv/bin/python -m app.main",
+      "log": "/tmp/python-template-backend.log"
+    },
+    {
+      "name": "frontend",
+      "port": 3000,
+      "cwd": "frontend",
+      "cmd": "npm run dev",
+      "log": "/tmp/python-template-frontend.log"
+    }
+  ]
+}

@@ -27,3 +27,13 @@ dist/
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+
+# Demo video: generated media is ignored, hand-written source is tracked
+demo/*
+!demo/demo.config.json
+!demo/record.cjs
+!demo/scenes.json
+!demo/NOTES.md
+!demo/demo-plan.md
+!demo/make-workflow.py

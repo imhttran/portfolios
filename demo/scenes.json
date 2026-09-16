@@ -1,0 +1,58 @@
+[
+  {
+    "id": "hook",
+    "text": "Here's a quick look at a photography portfolio that doubles as a client delivery tool. Next JS on the front, Fast API and Postgres behind it. Two photographers share one site, and what you can actually download depends on who you are."
+  },
+  {
+    "id": "public_browse",
+    "text": "Anyone can browse. The work is all here, organized by album, and none of it is hidden behind a login just to look at. The gate is on taking a copy, not on seeing it."
+  },
+  {
+    "id": "admin_signin",
+    "text": "I'll start as the admin — it's a new device, so it asks for a verification code before letting me in. That happens on any unfamiliar browser, not just the first time."
+  },
+  {
+    "id": "admin_users",
+    "text": "This is the whole studio in one table. Every account, and the role it holds. Client, artist, staff, admin. That role is a column in the database, and every endpoint checks it before it answers. So I can change someone's standing right here. No config file involved."
+  },
+  {
+    "id": "admin_adduser",
+    "text": "Adding someone takes an email and a temporary password. The account comes up as a client, flagged to force a new password on first sign-in, so that temporary one never survives the first login."
+  },
+  {
+    "id": "admin_grant_role",
+    "text": "Roles grant the powers. And I can hand one over... right here. It doesn't put you on the site by itself, though. That takes a saved profile and albums."
+  },
+  {
+    "id": "studio_words",
+    "text": "The Studio is where the site's words live. The name, the tagline, the statement up top, the bio, and the longer About section underneath the work. All of it comes from the database. None of it is hardcoded."
+  },
+  {
+    "id": "studio_albums",
+    "text": "Below that, the albums. Each one sits in a bucket. Free, paid, or premium. That one dropdown is what decides who can download it. I can hide an album, add frames to it, or start a new one."
+  },
+  {
+    "id": "studio_newalbum",
+    "text": "A new album starts empty and hidden, which is what you want — nothing half-finished goes live. The bucket gets set now, because that's what decides who can download it. Publish once the frames are in."
+  },
+  {
+    "id": "admin_all_albums",
+    "text": "And an admin sees that same editor across every artist on the site. Every album in one place — the same endpoint, just a wider query for staff. So they can retier something, or pull it down, without going through the photographer."
+  },
+  {
+    "id": "artist_page",
+    "text": "And each artist gets their own page, with their own theme. Ted's work, Ted's name, Ted's contact details. Same codebase, different front door."
+  },
+  {
+    "id": "client_locked",
+    "text": "Here's where it gets interesting. This client is on the paid tier, and subscriptions are per artist — so Ted's paid work opens, and nothing above it. They can see every frame of this premium album, full size, but nothing here is downloadable. Every one of them just reads Locked."
+  },
+  {
+    "id": "client_premium",
+    "text": "Same album, same photographer, but a client on the premium tier. Same request as the last one, answered differently for this caller. Grab the whole set at once, or step through and pull down the single original you actually need."
+  },
+  {
+    "id": "theme_close",
+    "text": "And the whole thing flips between light and dark on the spot. That's the loop. The studio sets the rules, the artists own their pages, and every client sees exactly what they're paying for."
+  }
+]
