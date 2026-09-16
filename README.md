@@ -14,6 +14,19 @@ FastAPI        backend/     → :8080   SQLAlchemy + JWT + scrypt + email worker
 PostgreSQL     tables created on boot
 ```
 
+## Demo
+
+A 3:44 walkthrough of the whole site: public browsing, admin sign-in with 2FA on a new
+device, creating an account and promoting it to artist, an artist starting and tiering
+an album, and the centrepiece — the same premium album showing every frame `Locked` for
+a paid client, then unlocked with a real download for a premium one.
+
+https://github.com/user-attachments/assets/63a2f2b1-6ee7-4b5a-a87b-8052746b7a83
+
+Full-quality 1080p cut: [demo-v1 release](https://github.com/imhttran/portfolios/releases/tag/demo-v1).
+How it is recorded, and this app's gotchas: [demo/NOTES.md](demo/NOTES.md). Scene list
+and honest caveats: [demo/demo-plan.md](demo/demo-plan.md).
+
 ## Quick Start
 
 ```bash
